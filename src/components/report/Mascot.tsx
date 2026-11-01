@@ -7,7 +7,8 @@ import * as THREE from "three";
 import { LONDON_FIELDS } from "./londonFields";
 
 export type MascotKind = "fox" | "fields";
-export type MascotMood = "idle" | "scanning" | "happy" | "sleeping";
+export type MascotMood = "idle" | "scanning" | "happy" | "sleeping" | "listening" | "talking";
+type Level = { current: number };
 
 // In the style of Grok's bots and OpenAI's dots: one simple glossy shape, a face that is
 // only two capsule eyes, and all the emotion in eye shape, blink and bounce.
@@ -25,7 +26,7 @@ function glossy(colour: string) {
 
 const eyeMaterial = new THREE.MeshPhysicalMaterial({ color: "#14161a", roughness: 0.2, clearcoat: 1 });
 
-function Eyes({ mood, spacing = 0.26, z = 0.86, y = 0.08, size = 1 }: { mood: MascotMood; spacing?: number; z?: number; y?: number; size?: number }) {
+function Eyes({ mood, level, spacing = 0.26, z = 0.86, y = 0.08, size = 1 }: { mood: MascotMood; level?: Level; spacing?: number; z?: number; y?: number; size?: number }) {
   const group = useRef<THREE.Group>(null);
   const blink = useRef({ next: 2 + Math.random() * 2, t: 0 });
 
@@ -47,6 +48,8 @@ function Eyes({ mood, spacing = 0.26, z = 0.86, y = 0.08, size = 1 }: { mood: Ma
         }
       }
     }
+    // Talking: eyes widen with the voice.
+    if (mood === "talking" && level) open *= 1 + level.current * 0.6;
     g.children.forEach((eye) => (eye.scale.y = THREE.MathUtils.lerp(eye.scale.y, open, 0.35)));
     // Scanning: eyes sweep side to side, reading the photo.
     const look = mood === "scanning" ? Math.sin(time * 3.2) * 0.09 : 0;
@@ -64,7 +67,7 @@ function Eyes({ mood, spacing = 0.26, z = 0.86, y = 0.08, size = 1 }: { mood: Ma
   );
 }
 
-function Fox({ mood }: { mood: MascotMood }) {
+function Fox({ mood, level }: { mood: MascotMood; level?: Level }) {
   const body = useMemo(() => glossy("#f08a24"), []);
   const belly = useMemo(() => glossy("#fff3e6"), []);
   const ear = useMemo(() => glossy("#e2741a"), []);
@@ -87,12 +90,12 @@ function Fox({ mood }: { mood: MascotMood }) {
       <mesh material={belly} position={[1.28, -0.12, -0.6]} scale={0.2}>
         <sphereGeometry args={[1, 24, 24]} />
       </mesh>
-      <Eyes mood={mood} />
+      <Eyes mood={mood} level={level} />
     </group>
   );
 }
 
-function FieldsTile({ mood }: { mood: MascotMood }) {
+function FieldsTile({ mood, level }: { mood: MascotMood; level?: Level }) {
   const geometry = useMemo(() => {
     const shape = new THREE.Shape(LONDON_FIELDS.map(([x, y]) => new THREE.Vector2(x, y)));
     const g = new THREE.ExtrudeGeometry(shape, { depth: 0.32, bevelEnabled: true, bevelSize: 0.08, bevelThickness: 0.08, bevelSegments: 8, curveSegments: 4 });
@@ -108,19 +111,24 @@ function FieldsTile({ mood }: { mood: MascotMood }) {
         <mesh geometry={geometry} material={material} />
         <mesh geometry={geometry} material={trim} scale={[1.04, 1.04, 0.6]} position={[0, 0, -0.12]} />
       </group>
-      <Eyes mood={mood} z={0.3} y={0.04} spacing={0.24} size={1.1} />
+      <Eyes mood={mood} level={level} z={0.3} y={0.04} spacing={0.24} size={1.1} />
     </group>
   );
 }
 
-function Rig({ kind, mood }: { kind: MascotKind; mood: MascotMood }) {
+function Rig({ kind, mood, level }: { kind: MascotKind; mood: MascotMood; level?: Level }) {
   const group = useRef<THREE.Group>(null);
   useFrame((state) => {
     const g = group.current;
     if (!g) return;
     const t = state.clock.elapsedTime;
     // Happy: squash-and-stretch hops. Otherwise a gentle breathing sway.
-    if (mood === "happy") {
+    if ((mood === "talking" || mood === "listening") && level) {
+      // Driven by live audio: bounce and squash with loudness.
+      const l = level.current;
+      g.position.y = THREE.MathUtils.lerp(g.position.y, l * (mood === "talking" ? 0.45 : 0.2), 0.4);
+      g.scale.set(1 - l * 0.08, 1 + l * (mood === "talking" ? 0.22 : 0.1), 1 - l * 0.08);
+    } else if (mood === "happy") {
       const hop = Math.abs(Math.sin(t * 6));
       g.position.y = hop * 0.35;
       g.scale.set(1 + (1 - hop) * 0.08, 1 - (1 - hop) * 0.08, 1);
@@ -132,10 +140,10 @@ function Rig({ kind, mood }: { kind: MascotKind; mood: MascotMood }) {
     g.rotation.y = mood === "sleeping" ? 0 : Math.sin(t * 0.7) * 0.25;
     g.rotation.z = mood === "sleeping" ? 0.18 : 0;
   });
-  return <group ref={group}>{kind === "fox" ? <Fox mood={mood} /> : <FieldsTile mood={mood} />}</group>;
+  return <group ref={group}>{kind === "fox" ? <Fox mood={mood} level={level} /> : <FieldsTile mood={mood} level={level} />}</group>;
 }
 
-export function Mascot({ kind, mood, className }: { kind: MascotKind; mood: MascotMood; className?: string }) {
+export function Mascot({ kind, mood, className, level }: { kind: MascotKind; mood: MascotMood; className?: string; level?: Level }) {
   return (
     <div className={className}>
       <Canvas camera={{ position: [0, 0.2, 4.2], fov: 32 }} dpr={[1, 1.5]} gl={{ alpha: true, antialias: true, powerPreference: "low-power" }}>
@@ -144,8 +152,8 @@ export function Mascot({ kind, mood, className }: { kind: MascotKind; mood: Masc
         <directionalLight position={[3, 1, -3]} intensity={1.2} color="#bfe6d6" />
         {/* Lights only: an HDR environment meant a 1-2s CDN download per mascot. */}
         <hemisphereLight args={["#ffffff", "#9fb8ad", 1.1]} />
-        <Float speed={mood === "happy" ? 0 : 1.4} rotationIntensity={0.15} floatIntensity={0.4}>
-          <Rig kind={kind} mood={mood} />
+        <Float speed={mood === "happy" || mood === "talking" ? 0 : 1.4} rotationIntensity={0.15} floatIntensity={0.4}>
+          <Rig kind={kind} mood={mood} level={level} />
         </Float>
       </Canvas>
     </div>

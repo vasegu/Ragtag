@@ -3,11 +3,12 @@
 import { useEffect, useRef, useState } from "react";
 import { Answer } from "@/components/ask/Answer";
 import { type Turn, useAsk } from "@/lib/ask/useAsk";
+import { useVoice } from "@/lib/ask/useVoice";
 import { type Player, levelFor } from "@/lib/report/game";
 import type { Track } from "@/lib/report/track";
 import { CATEGORY_META, type Report } from "@/lib/report/types";
 import { Mascot, type MascotKind } from "./Mascot";
-import { IconBin, IconCamera, IconChat, IconHome, IconParking, IconPin, IconPound, IconSearch, IconUser, IconWrench } from "./icons";
+import { IconBin, IconCamera, IconChat, IconHome, IconMic, IconParking, IconPin, IconPound, IconSearch, IconUser, IconWrench } from "./icons";
 import { CategoryIcon, Flame, Label } from "./ui";
 
 export type Tab = "home" | "ask" | "nearby" | "me";
@@ -174,8 +175,9 @@ export function FrontDoor({
 
 const STREET_AREAS = ["bins-and-recycling", "streets-and-roads", "parking", "environmental-health-and-noise", "community-safety"];
 
-export function AskTab({ initial, onReport }: { initial: string | null; onReport: () => void }) {
+export function AskTab({ initial, mascot, onReport }: { initial: string | null; mascot: MascotKind; onReport: () => void }) {
   const { turns, busy, send } = useAsk();
+  const voice = useVoice();
   const [draft, setDraft] = useState("");
   const sentInitial = useRef<string | null>(null);
   const end = useRef<HTMLDivElement>(null);
@@ -222,11 +224,88 @@ export function AskTab({ initial, onReport }: { initial: string | null; onReport
         }}
         className="absolute inset-x-3 bottom-[88px] z-20 flex items-center gap-2 rounded-full bg-card p-1.5 pl-4 shadow-card-hover ring-1 ring-line"
       >
+        <button
+          type="button"
+          onClick={voice.start}
+          aria-label="Talk to One Hackney"
+          className="-ml-2.5 grid h-10 w-10 shrink-0 place-items-center rounded-full text-hackney transition hover:bg-hackney-tint"
+        >
+          <IconMic className="h-[22px] w-[22px]" />
+        </button>
         <input value={draft} onChange={(e) => setDraft(e.target.value)} placeholder="Ask anything…" aria-label="Your question" className="min-w-0 flex-1 bg-transparent text-[15px] outline-none placeholder:text-muted" />
         <button type="submit" disabled={busy || !draft.trim()} className="h-10 rounded-full bg-ink px-4 text-[14px] font-semibold text-white disabled:bg-ink/25">
           {busy ? "…" : "Ask"}
         </button>
       </form>
+      {voice.status !== "idle" && <LiveVoice voice={voice} mascot={mascot} onReport={onReport} />}
+    </div>
+  );
+}
+
+/** Full-screen live voice mode: a liquid glass orb, live transcript and the pages it used. */
+function LiveVoice({ voice, mascot, onReport }: { voice: ReturnType<typeof useVoice>; mascot: MascotKind; onReport: () => void }) {
+  const last = voice.lines.slice(-4);
+  const state =
+    voice.status === "connecting"
+      ? "Connecting…"
+      : voice.status === "error"
+        ? (voice.error ?? "Voice failed to start")
+        : voice.searching
+          ? `Searching Hackney: ${voice.searching}`
+          : voice.speaking
+            ? "Speaking"
+            : "Listening. Ask anything, in any language";
+  return (
+    <div className="absolute inset-0 z-40 flex flex-col bg-gradient-to-b from-[#eaf6f0] via-canvas to-canvas px-5 pb-28 pt-[58px]">
+      <div className="flex items-center justify-between">
+        <Label>One Hackney · Live</Label>
+        <span className="flex items-center gap-1.5 rounded-full bg-card px-2.5 py-1 font-mono text-[10px] uppercase tracking-[0.1em] text-hackney shadow-card">
+          <span className={`h-1.5 w-1.5 rounded-full ${voice.status === "live" ? "animate-pulse bg-hackney-bright" : "bg-muted"}`} />
+          {voice.status === "live" ? "On air" : voice.status}
+        </span>
+      </div>
+
+      <div className="flex flex-1 flex-col items-center justify-center">
+        <div className="relative">
+          <span className={`absolute inset-6 rounded-full bg-hackney-bright/25 blur-2xl transition-opacity ${voice.speaking ? "opacity-100" : "opacity-40"}`} />
+          <Mascot
+            kind={mascot}
+            mood={voice.speaking ? "talking" : voice.searching ? "scanning" : voice.status === "live" ? "listening" : "idle"}
+            level={voice.level}
+            className="relative h-[240px] w-[240px]"
+          />
+        </div>
+        <p className="mt-8 max-w-[280px] text-center text-[15px] font-medium text-ink">{state}</p>
+      </div>
+
+      <div className="space-y-2">
+        {last.map((l) => (
+          <p
+            key={l.id}
+            className={`pop-in rounded-[18px] px-3.5 py-2 text-[13.5px] leading-snug ${l.role === "user" ? "ml-8 bg-ink text-white" : "mr-8 bg-card shadow-card"}`}
+          >
+            {l.text}
+          </p>
+        ))}
+        {voice.sources.length > 0 && (
+          <div className="flex flex-wrap gap-1.5 pt-1">
+            {voice.sources.slice(-3).map((src) => (
+              <a key={src.url} href={src.url} target="_blank" rel="noreferrer" className="max-w-full truncate rounded-full bg-card px-2.5 py-1 text-[11.5px] shadow-card hover:bg-hackney-tint">
+                {src.title}
+              </a>
+            ))}
+          </div>
+        )}
+      </div>
+
+      <div className="mt-4 flex gap-2">
+        <button onClick={onReport} className="liquid-glass flex h-12 flex-1 items-center justify-center gap-2 rounded-full text-[14px] font-semibold text-ink">
+          <IconCamera className="h-5 w-5" /> Report
+        </button>
+        <button onClick={voice.stop} className="h-12 flex-1 rounded-full bg-[#e5484d] text-[14px] font-semibold text-white shadow-card-hover">
+          End
+        </button>
+      </div>
     </div>
   );
 }

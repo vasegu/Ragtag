@@ -320,7 +320,7 @@ export function ReportApp() {
                 onTab={setTab}
               />
             )}
-            {screen === "tabs" && tab === "ask" && <AskTab initial={askSeed} onReport={() => setScreen("capture")} />}
+            {screen === "tabs" && tab === "ask" && <AskTab initial={askSeed} mascot={mascot} onReport={() => setScreen("capture")} />}
             {screen === "tabs" && tab === "nearby" && <NearbyTab reports={nearby} onOpen={openReport} />}
             {screen === "tabs" && tab === "me" && (
               <HomeScreen
