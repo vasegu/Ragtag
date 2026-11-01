@@ -5,7 +5,8 @@ import "mapbox-gl/dist/mapbox-gl.css";
 import { useEffect, useRef } from "react";
 import { CATEGORY_META, type LatLng, type Report } from "@/lib/report/types";
 
-const HACKNEY_CENTER: [number, number] = [-0.0605, 51.5475];
+// Start close over London Fields: Mapbox only draws 3D buildings and landmarks from about zoom 15.
+const START_CENTER: [number, number] = [-0.0612, 51.5418];
 
 type Props = {
   reports: Report[];
@@ -17,6 +18,8 @@ type Props = {
   questIds: string[];
   onSelect?: (report: Report) => void;
   theme: "night" | "day";
+  /** Standard 3D, or the same 3D buildings over satellite imagery. */
+  variant: "standard" | "satellite";
 };
 
 function toGeoJSON(reports: Report[], questIds: string[]): GeoJSON.FeatureCollection {
@@ -38,13 +41,15 @@ function toGeoJSON(reports: Report[], questIds: string[]): GeoJSON.FeatureCollec
 }
 
 /** Mapbox Standard style at night: 3D buildings and landmarks, glowing report pins. */
-export function NightMap({ reports, focus, dropped, questIds, onSelect, theme }: Props) {
+export function NightMap({ reports, focus, dropped, questIds, onSelect, theme, variant }: Props) {
   const container = useRef<HTMLDivElement>(null);
   const map = useRef<mapboxgl.Map | null>(null);
   const marker = useRef<mapboxgl.Marker | null>(null);
   const idleSpin = useRef(true);
   // The style loads with the starting light; later changes go through setConfigProperty.
   const initialTheme = useRef(theme);
+  // Each variant mounts its own map (the parent keys on it), so this is fixed for the map's life.
+  const initialVariant = useRef(variant);
   const latest = useRef({ reports, questIds, onSelect });
   latest.current = { reports, questIds, onSelect };
 
@@ -58,7 +63,7 @@ export function NightMap({ reports, focus, dropped, questIds, onSelect, theme }:
     mapboxgl.accessToken = token;
     const m = new mapboxgl.Map({
       container: container.current,
-      style: "mapbox://styles/mapbox/standard",
+      style: initialVariant.current === "satellite" ? "mapbox://styles/mapbox/standard-satellite" : "mapbox://styles/mapbox/standard",
       config: {
         basemap: {
           lightPreset: initialTheme.current,
@@ -68,9 +73,9 @@ export function NightMap({ reports, focus, dropped, questIds, onSelect, theme }:
           showPedestrianRoads: false,
         },
       },
-      center: HACKNEY_CENTER,
-      zoom: 13.4,
-      pitch: 62,
+      center: START_CENTER,
+      zoom: 15.6,
+      pitch: 66,
       bearing: -24,
       antialias: true,
       attributionControl: false,
@@ -139,7 +144,8 @@ export function NightMap({ reports, focus, dropped, questIds, onSelect, theme }:
     m.on("touchstart", stop);
     m.on("wheel", stop);
     const spin = () => {
-      if (!idleSpin.current || !map.current) return;
+      // Satellite tiles are rate-limited, so don't keep requesting new ones while idle.
+      if (!idleSpin.current || !map.current || initialVariant.current === "satellite") return;
       m.easeTo({ bearing: m.getBearing() + 6, duration: 4000, easing: (t) => t });
     };
     m.on("moveend", spin);
