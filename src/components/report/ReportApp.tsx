@@ -4,7 +4,7 @@ import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { type Reward, usePlayer } from "@/lib/report/game";
-import { CATEGORY_META, type Classification, DEMO_LOCATION, type LatLng, type QueueInfo, type Report } from "@/lib/report/types";
+import { type Category, CATEGORY_META, type Classification, DEMO_LOCATION, type LatLng, type QueueInfo, type Report } from "@/lib/report/types";
 import type { MascotKind } from "./Mascot";
 import { NightMap } from "./NightMap";
 import { BadgesScreen, BoardScreen, CaptureScreen, HomeScreen, RewardOverlay, ScanScreen, StreakSheet, TrackerScreen, VerifySheet } from "./screens";
@@ -48,12 +48,11 @@ export function ReportApp() {
   const { player, act, reset } = usePlayer();
   const isPhone = useIsPhone();
   const [mascot, setMascot] = useState<MascotKind>("fields");
-  const [mapStyle, setMapStyle] = useState<"mapbox" | "game">(HAS_MAPBOX ? "mapbox" : "game");
-  // Day/night follows the clock by default (7am to 7pm is day); the panel can override it.
-  const [theme, setTheme] = useState<"night" | "day">(() => {
-    const h = new Date().getHours();
-    return h >= 7 && h < 19 ? "day" : "night";
-  });
+  // Game view in daylight by default; the panel switches to real 3D or night.
+  const [mapStyle, setMapStyle] = useState<"mapbox" | "game">("game");
+  const [theme, setTheme] = useState<"night" | "day">("day");
+  // Categories hidden from the map via the legend chips.
+  const [hidden, setHidden] = useState<Set<Category>>(new Set());
   const [screen, setScreen] = useState<Screen>("tabs");
   const [tab, setTab] = useState<Tab>("home");
   // A question started from Home (search bar or quick tile), sent when the Ask tab opens.
@@ -84,7 +83,20 @@ export function ReportApp() {
   useEffect(() => {
     fetch("/api/reports")
       .then((r) => r.json())
-      .then((d: { reports: Report[] }) => setReports(d.reports));
+      .then((d: { reports: Report[] }) => {
+        setReports(d.reports);
+        // Warm the browser cache with report photos so switching between problems is instant.
+        d.reports
+          .filter((r) => r.photo_url)
+          .slice(0, 120)
+          .forEach((r, i) =>
+            setTimeout(() => {
+              const img = new Image();
+              img.decoding = "async";
+              img.src = r.photo_url!;
+            }, i * 40),
+          );
+      });
   }, []);
 
   // Real GPS when it's inside Hackney; otherwise stay at the London Fields demo spot.
@@ -122,6 +134,7 @@ export function ReportApp() {
     [reports, location],
   );
   const questIds = useMemo(() => quests.map((q) => q.id), [quests]);
+  const visibleReports = useMemo(() => reports.filter((r) => !hidden.has(r.category)), [reports, hidden]);
   const nearby = useMemo(() => reports.map((r) => ({ ...r, distance: metres(location, r) })).sort((a, b) => a.distance - b.distance), [reports, location]);
   const active = useMemo(
     () => (submitted ? { report: submitted, track: buildTrack(submitted, reports, { classification, workOrder: pipeline.result?.workOrder ?? null }) } : null),
@@ -200,9 +213,25 @@ export function ReportApp() {
     setReward(act({ type: "verify" }));
   };
 
+  // Fly the map now, but only open the sheet once its photo is ready, so it never pops in half-loaded.
   const openReport = (r: Report) => {
     setFocus({ lat: r.lat, lng: r.lng });
-    setVerifying(r);
+    if (!r.photo_url) {
+      setVerifying(r);
+      return;
+    }
+    const img = new Image();
+    let opened = false;
+    const open = () => {
+      if (opened) return;
+      opened = true;
+      setVerifying(r);
+    };
+    img.onload = open;
+    img.onerror = open;
+    img.src = r.photo_url;
+    if (img.complete) open();
+    setTimeout(open, 1500);
   };
 
   const ask = (q?: string) => {
@@ -221,7 +250,7 @@ export function ReportApp() {
       <div className={`absolute inset-0 ${isPhone ? "hidden" : ""}`}>
         {mapStyle !== "game" ? (
           <NightMap
-            reports={reports}
+            reports={visibleReports}
             focus={focus}
             dropped={dropped}
             questIds={questIds}
@@ -230,7 +259,7 @@ export function ReportApp() {
           />
         ) : (
           <HackneyGame
-            reports={reports}
+            reports={visibleReports}
             focus={focus}
             theme={theme}
             onSelect={(id) => {
@@ -257,12 +286,27 @@ export function ReportApp() {
             </div>
           </div>
           <div className="mt-4 flex flex-wrap gap-1.5">
-            {Object.entries(CATEGORY_META).map(([k, m]) => (
-              <span key={k} className="flex items-center gap-1.5 rounded-full bg-white/10 px-2.5 py-1 text-[11.5px]">
-                <span className="h-2 w-2 rounded-full" style={{ background: m.colour, boxShadow: `0 0 8px ${m.colour}` }} />
-                {m.label}
-              </span>
-            ))}
+            {(Object.entries(CATEGORY_META) as [Category, (typeof CATEGORY_META)[Category]][]).map(([k, m]) => {
+              const off = hidden.has(k);
+              return (
+                <button
+                  key={k}
+                  onClick={() =>
+                    setHidden((h) => {
+                      const next = new Set(h);
+                      if (next.has(k)) next.delete(k);
+                      else next.add(k);
+                      return next;
+                    })
+                  }
+                  aria-pressed={!off}
+                  className={`flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11.5px] transition ${off ? "bg-white/5 text-white/40 line-through" : "bg-white/15 hover:bg-white/25"}`}
+                >
+                  <span className="h-2 w-2 rounded-full" style={{ background: off ? "rgba(255,255,255,0.3)" : m.colour, boxShadow: off ? "none" : `0 0 8px ${m.colour}` }} />
+                  {m.label}
+                </button>
+              );
+            })}
             <span className="flex items-center gap-1.5 rounded-full bg-white/10 px-2.5 py-1 text-[11.5px]">
               <span className="h-2 w-2 rounded-full ring-2 ring-hackney-lime" />
               Quest

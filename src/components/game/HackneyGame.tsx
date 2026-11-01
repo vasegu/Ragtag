@@ -226,7 +226,7 @@ function Scene({ data, built, reports, focus, reducedMotion, theme, onSelect }: 
     <directionalLight position={[-1800, 3000, 1200]} color={palette.sun[0]} intensity={palette.sun[1]} />
     <directionalLight position={[1200, 900, -1500]} color={palette.rim[0]} intensity={palette.rim[1]} />
     <City built={built} data={data} theme={theme} />
-    <ReportBeacons reports={reports} origin={data.origin} glow={glow} reducedMotion={reducedMotion} onSelect={onSelect} />
+    <ReportBeacons reports={reports} origin={data.origin} glow={glow} reducedMotion={reducedMotion} onSelect={onSelect} day={theme === "day"} />
     <CameraRig focus={focus} origin={data.origin} reducedMotion={reducedMotion} />
   </>;
 }

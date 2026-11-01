@@ -117,10 +117,10 @@ export function NightMap({ reports, focus, dropped, questIds, onSelect, theme }:
         source: "reports",
         slot: "top",
         paint: {
-          "circle-radius": ["interpolate", ["linear"], ["zoom"], 12, 4, 17, 11],
+          "circle-radius": ["interpolate", ["linear"], ["zoom"], 12, 5.5, 17, 14],
           "circle-color": ["get", "colour"],
           "circle-stroke-color": "#ffffff",
-          "circle-stroke-width": ["interpolate", ["linear"], ["zoom"], 12, 1, 17, 2.5],
+          "circle-stroke-width": ["interpolate", ["linear"], ["zoom"], 12, 1.5, 17, 3],
           "circle-emissive-strength": 1,
           "circle-pitch-alignment": "map",
         },

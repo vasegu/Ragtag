@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, type ComponentRef } from "react";
-import { OrbitControls } from "@react-three/drei";
+import { MapControls } from "@react-three/drei";
 import { useFrame, useThree } from "@react-three/fiber";
 import { Vector3 } from "three";
 import { latLngToLocal } from "./map-data";
@@ -10,7 +10,7 @@ type Location = { lat: number; lng: number };
 type Flight = { elapsed: number; duration: number; from: Vector3; to: Vector3; fromTarget: Vector3; target: Vector3 };
 
 export function CameraRig({ focus, origin, reducedMotion }: { focus?: Location | null; origin: Location; reducedMotion: boolean }) {
-  const controls = useRef<ComponentRef<typeof OrbitControls>>(null);
+  const controls = useRef<ComponentRef<typeof MapControls>>(null);
   const camera = useThree((state) => state.camera);
   const flight = useRef<Flight | null>(null);
   const firstFlight = useRef(true);
@@ -48,5 +48,6 @@ export function CameraRig({ focus, origin, reducedMotion }: { focus?: Location |
     target.y = 0;
   });
 
-  return <OrbitControls ref={controls} makeDefault enableDamping dampingFactor={0.07} screenSpacePanning={false} minDistance={120} maxDistance={9000} minPolarAngle={0.12} maxPolarAngle={Math.PI / 2.3} zoomSpeed={0.65} rotateSpeed={0.5} panSpeed={0.6} onStart={() => { flight.current = null; firstFlight.current = false; }} />;
+  // Mapbox-style: drag pans across the ground, scroll zooms, right-drag rotates and tilts.
+  return <MapControls ref={controls} makeDefault enableDamping dampingFactor={0.07} screenSpacePanning={false} minDistance={120} maxDistance={9000} minPolarAngle={0.12} maxPolarAngle={Math.PI / 2.3} zoomSpeed={0.65} rotateSpeed={0.5} panSpeed={0.6} onStart={() => { flight.current = null; firstFlight.current = false; }} />;
 }
