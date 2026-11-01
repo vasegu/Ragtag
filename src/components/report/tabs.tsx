@@ -8,7 +8,7 @@ import { type Player, levelFor } from "@/lib/report/game";
 import type { Track } from "@/lib/report/track";
 import { CATEGORY_META, type Report } from "@/lib/report/types";
 import { Mascot, type MascotKind } from "./Mascot";
-import { IconBin, IconCamera, IconChat, IconHome, IconMic, IconMicOff, IconParking, IconPin, IconPound, IconSearch, IconUser, IconWrench } from "./icons";
+import { IconBin, IconCamera, IconChat, IconDroplet, IconHome, IconMic, IconMicOff, IconParking, IconPin, IconPound, IconSearch, IconSpeaker, IconUser, IconWrench } from "./icons";
 import { CategoryIcon, Flame, Label } from "./ui";
 
 export type Tab = "home" | "ask" | "nearby" | "me";
@@ -45,11 +45,19 @@ export function TabBar({ tab, onTab, onReport }: { tab: Tab; onTab: (t: Tab) => 
 
 /* ------------------------------ Home front door ---------------------------- */
 
+// Tiles follow what residents complain about most (docs/reddit-complaints.md).
 const QUICK = [
-  { label: "Pay council tax", q: "How do I pay my council tax?", Icon: IconPound },
-  { label: "Bin day", q: "When is my bin collection day and what goes in which bin?", Icon: IconBin },
-  { label: "Parking permit", q: "How do I get a resident parking permit?", Icon: IconParking },
-  { label: "Housing repair", q: "How do I report a repair in my council home?", Icon: IconWrench },
+  { label: "Council tax", q: "How do I pay my council tax, and can I get help if I'm struggling?", Icon: IconPound },
+  { label: "Missed bin", q: "My bin wasn't collected. How do I report it and when is my bin day?", Icon: IconBin },
+  { label: "Damp & mould", q: "There's damp and mould in my council flat. How do I get it fixed?", Icon: IconDroplet },
+  { label: "Parking fine", q: "How do I challenge a parking or LTN fine (PCN) in Hackney?", Icon: IconParking },
+];
+
+// The frustrations behind most council complaints, each with a way out.
+const COMMON = [
+  { title: "Repairs that never come", sub: "Top Ombudsman issue in Hackney", q: "I reported a repair weeks ago and nothing has happened. How do I chase or escalate it?", Icon: IconWrench },
+  { title: "Fly-tip outside my block", sub: "31,000+ in Hackney last year", report: true, Icon: IconBin },
+  { title: "Noise at night", sub: "Who to call when it's 2am", q: "My neighbours are making noise late at night. Who do I contact in Hackney?", Icon: IconSpeaker },
 ];
 
 export function FrontDoor({
@@ -161,6 +169,27 @@ export function FrontDoor({
         </button>
       )}
 
+      <div className="rounded-[24px] bg-card p-4 shadow-card">
+        <Label>Sound familiar?</Label>
+        <p className="mt-1 text-[13px] leading-snug text-muted">
+          No hold music, no &ldquo;we&rsquo;ll be in touch&rdquo;. Get the answer now, and every report gets a tracker and a fix date.
+        </p>
+        <div className="mt-2 divide-y divide-line">
+          {COMMON.map((c) => (
+            <button key={c.title} onClick={() => (c.report ? onReport() : onAsk(c.q))} className="flex w-full items-center gap-3 py-2.5 text-left">
+              <span className="grid h-9 w-9 shrink-0 place-items-center rounded-[12px] bg-hackney-tint text-hackney">
+                <c.Icon className="h-5 w-5" />
+              </span>
+              <span className="min-w-0 flex-1">
+                <span className="block text-[14px] font-semibold leading-tight">{c.title}</span>
+                <span className="block font-mono text-[10.5px] text-muted">{c.sub}</span>
+              </span>
+              <span className="text-[12px] font-semibold text-hackney">{c.report ? "Report" : "Ask"} →</span>
+            </button>
+          ))}
+        </div>
+      </div>
+
       <div>
         <div className="flex items-baseline justify-between px-1">
           <Label>Near you</Label>
@@ -239,9 +268,9 @@ export function AskTab({
         {turns.length === 0 && (
           <div className="pt-6 text-center">
             <p className="text-[24px] font-semibold tracking-[-0.02em]">Ask the council</p>
-            <p className="mx-auto mt-1 max-w-[260px] text-[13.5px] text-muted">Answers from Hackney&apos;s own pages, with sources. Any language.</p>
+            <p className="mx-auto mt-1 max-w-[270px] text-[13.5px] text-muted">Answers from Hackney&apos;s own pages, with sources. Any language. No phone queue.</p>
             <div className="mt-5 space-y-2">
-              {["My bin wasn't collected", "Can I get help with council tax?", "There's mould in my flat", "Eski bir kanepeden nasıl kurtulurum?"].map((q) => (
+              {["My bin wasn't collected again", "There's damp and mould in my flat", "How do I challenge a parking fine?", "Can I get help with council tax?", "Eski bir kanepeden nasıl kurtulurum?"].map((q) => (
                 <button key={q} onClick={() => send(q)} className="block w-full rounded-[16px] bg-card px-4 py-3 text-left text-[14px] shadow-card">
                   {q}
                 </button>

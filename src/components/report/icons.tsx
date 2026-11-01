@@ -117,3 +117,15 @@ export const IconMicOff = (p: IconProps) => (
     <path d="M15 10V6a3 3 0 0 0-5.7-1.3M9 9v2a3 3 0 0 0 4.6 2.5M5.5 11a6.5 6.5 0 0 0 10.4 5.2M18.5 11a6.4 6.4 0 0 1-.6 2.7M12 17.5V21M8.5 21h7M3 3l18 18" />
   </Icon>
 );
+export const IconDroplet = (p: IconProps) => (
+  <Icon {...p}>
+    <path d="M12 3.5s6 6.4 6 10.7a6 6 0 0 1-12 0C6 9.9 12 3.5 12 3.5z" />
+    <path d="M9.2 14.8a3 3 0 0 0 2.6 2.4" />
+  </Icon>
+);
+export const IconSpeaker = (p: IconProps) => (
+  <Icon {...p}>
+    <path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z" />
+    <path d="M15.5 9a4 4 0 0 1 0 6M18 6.5a7.5 7.5 0 0 1 0 11" />
+  </Icon>
+);
