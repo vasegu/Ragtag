@@ -11,7 +11,7 @@ const MODE: Record<WorkOrder["deliveryMode"], { label: string; style: string }> 
 };
 
 /** A crew-ready work order from pipeline decision 5: what a worker needs on their phone. */
-export function JobCard({ order, reference, address }: { order: WorkOrder; reference: string; address: string }) {
+export function JobCard({ order, reference, address, title }: { order: WorkOrder; reference: string; address: string; title: string }) {
   const mode = MODE[order.deliveryMode];
   const [open, setOpen] = useState(false);
   return (
@@ -22,13 +22,13 @@ export function JobCard({ order, reference, address }: { order: WorkOrder; refer
         </span>
         <div className="min-w-0 flex-1">
           <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-hackney-lime">Job card · {reference}</p>
-          <p className="mt-0.5 text-[15px] font-semibold leading-snug">{order.summary}</p>
+          <p className="mt-0.5 text-[16px] font-semibold leading-snug">{title}</p>
           <p className="mt-0.5 truncate text-[12px] text-white/60">{address}</p>
         </div>
       </div>
 
       <div className="border-b border-line bg-hackney-tint/50 px-4 py-3">
-        <p className="font-mono text-[10px] uppercase tracking-[0.12em] text-hackney">What we&apos;ll need · {order.size.band}</p>
+        <p className="font-mono text-[10px] uppercase tracking-[0.12em] text-hackney">Size: {order.size.band}</p>
         <p className="mt-0.5 text-[13.5px] font-medium leading-snug">{order.size.quantity}</p>
         <p className="text-[12px] leading-snug text-muted">{order.size.description}</p>
       </div>
@@ -46,6 +46,7 @@ export function JobCard({ order, reference, address }: { order: WorkOrder; refer
         </button>
       )}
       {open && <div className="space-y-3 p-4">
+        <p className="text-[13px] leading-snug text-muted">{order.summary}</p>
         <div className="flex flex-wrap items-center gap-1.5">
           <span className={`rounded-full px-2 py-0.5 font-mono text-[10px] uppercase tracking-[0.08em] ${mode.style}`}>{mode.label}</span>
           <span className="rounded-full bg-canvas px-2 py-0.5 font-mono text-[10px] text-muted">

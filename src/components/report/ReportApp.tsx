@@ -124,8 +124,8 @@ export function ReportApp() {
   const questIds = useMemo(() => quests.map((q) => q.id), [quests]);
   const nearby = useMemo(() => reports.map((r) => ({ ...r, distance: metres(location, r) })).sort((a, b) => a.distance - b.distance), [reports, location]);
   const active = useMemo(
-    () => (submitted ? { report: submitted, track: buildTrack(submitted, reports, { classification }) } : null),
-    [submitted, reports, classification],
+    () => (submitted ? { report: submitted, track: buildTrack(submitted, reports, { classification, workOrder: pipeline.result?.workOrder ?? null }) } : null),
+    [submitted, reports, classification, pipeline.result],
   );
   const stats = useMemo(() => {
     const open = reports.filter((r) => r.status !== "fixed").length;

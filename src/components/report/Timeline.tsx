@@ -99,13 +99,12 @@ function StageRow({ stage, last }: { stage: Stage; last: boolean }) {
           <p className={`text-[14.5px] font-semibold ${stage.state === "upcoming" ? "text-muted" : ""}`}>{stage.title}</p>
           {stage.at && <span className="shrink-0 font-mono text-[10.5px] text-muted">{when(stage.at)}</span>}
         </div>
-        {/* Only the stage in progress explains itself; the rest stay one line. */}
-        {current &&
-          stage.lines.map((l, i) => (
-            <p key={i} className="mt-0.5 text-[12.5px] leading-snug text-muted">
-              {l}
-            </p>
-          ))}
+        {/* Steps that have happened explain themselves; upcoming ones show one quiet line. */}
+        {(stage.state === "upcoming" ? stage.lines.slice(0, 1) : stage.lines).map((l, i) => (
+          <p key={i} className={`mt-0.5 text-[12.5px] leading-snug ${stage.state === "upcoming" ? "text-muted/70" : "text-muted"}`}>
+            {l}
+          </p>
+        ))}
       </div>
     </li>
   );

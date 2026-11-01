@@ -1,3 +1,4 @@
+import type { WorkOrder } from "@/features/street-brain/contracts";
 import { CATEGORY_META, type Category, type Classification, type Report } from "./types";
 
 // Per-report tracker in the shape of Santiago's severity and allocation models
@@ -36,14 +37,6 @@ const FAMILY: Record<Category, string> = {
   graffiti: "waste_or_graffiti",
   parking: "abandoned_vehicle",
   streetlight: "street_lighting",
-};
-
-const FAMILY_LABEL: Record<string, string> = {
-  carriageway_pothole: "Road defect",
-  footway_defect: "Pavement defect",
-  waste_or_graffiti: "Waste or graffiti",
-  abandoned_vehicle: "Parking or vehicle",
-  street_lighting: "Street lighting",
 };
 
 /** Santiago's model: create action tasks, not one ranked case. */
@@ -118,7 +111,12 @@ function addWorkingDays(from: Date, days: number) {
 const shortDate = (iso: string) => new Date(iso).toLocaleDateString("en-GB", { day: "numeric", month: "short" });
 const range = (from: string, to: string) => (from === to ? shortDate(from) : `${shortDate(from)} – ${shortDate(to)}`);
 
-export function buildTrack(report: Report, all: Report[], opts: { classification?: Partial<Classification> | null; now?: number } = {}): Track {
+export function buildTrack(
+  report: Report,
+  all: Report[],
+  opts: { classification?: Partial<Classification> | null; workOrder?: WorkOrder | null; now?: number } = {},
+): Track {
+  const work = opts.workOrder ?? null;
   const now = opts.now ?? Date.now();
   const meta = CATEGORY_META[report.category];
   const family = FAMILY[report.category];
@@ -157,38 +155,44 @@ export function buildTrack(report: Report, all: Report[], opts: { classification
   const stages: Stage[] = [
     {
       key: "reported",
-      title: duplicates ? `Reported, and ${duplicates} more nearby` : "Reported",
+      title: "Report received",
       state: "done",
       at: report.created_at,
       lines: duplicates
-        ? [`${duplicates} nearby ${duplicates === 1 ? "report looks" : "reports look"} like the same problem. Grouped, without inflating severity.`]
-        : ["Photo and location received."],
+        ? [`${duplicates} ${duplicates === 1 ? "neighbour has" : "neighbours have"} reported the same thing nearby`]
+        : ["Your photo and location are with the council."],
     },
     {
       key: "classified",
-      title: "Classified by AI",
+      title: `Identified as ${/^[aeiou]/i.test(meta.label) ? "an" : "a"} ${meta.label.toLowerCase()}`,
       state: "done",
       at: report.created_at,
       lines: [
-        `${meta.label} · ${FAMILY_LABEL[family]} · ${severity} provisional`,
-        owner.kind === "hackney" ? `Assigned to ${owner.name}` : owner.kind === "other" ? `Owned by ${owner.name}. Referred to them.` : owner.name,
+        owner.kind === "hackney" ? `Sent to ${owner.name}` : owner.kind === "other" ? `This is ${owner.name}'s to fix, so we've passed it on` : owner.name,
+        `${({ S0: "Emergency", S1: "High", S2: "Elevated", S3: "Routine", S4: "Low" } as const)[severity]} priority (provisional)`,
       ],
     },
     {
       key: "planned",
-      title: owner.kind === "hackney" ? "Plan made" : `With ${owner.kind === "other" ? owner.name : "another body"}`,
+      title: owner.kind === "hackney" ? "Job planned" : `Passed to ${owner.kind === "other" ? owner.name : "the owner"}`,
       state: fixed || dispatched ? "done" : planned ? "current" : "current",
       at: fms?.firstResponseAt ?? (report.source === "app" ? report.created_at : undefined),
       lines:
         owner.kind === "hackney"
           ? [
-              `${actions.join(" → ")} · target ${meta.deadline}`,
+              ...(work
+                ? [
+                    `A ${work.crewSize}-person ${work.trade} crew, about ${work.estimatedMinutes.min}–${work.estimatedMinutes.max} min on site`,
+                    `${work.size.band[0].toUpperCase()}${work.size.band.slice(1)} job: ${work.size.quantity}`,
+                  ]
+                : [actions.join(" → ")]),
+              `Hackney aims to deal with these within ${meta.deadline}`,
             ]
           : ["Hackney has passed this on. Track it with them."],
     },
     {
       key: "dispatched",
-      title: dispatched ? "Crew dispatched" : "Crew dispatched",
+      title: "Crew on the way",
       state: fixed ? "done" : dispatched ? "current" : "upcoming",
       at: dispatchedAt ?? undefined,
       lines: dispatchedAt
@@ -201,10 +205,10 @@ export function buildTrack(report: Report, all: Report[], opts: { classification
     },
     {
       key: "completed",
-      title: "Completed",
+      title: "Fixed",
       state: fixed ? "done" : "upcoming",
       at: fixed ? (fms?.resolvedAt ?? undefined) : undefined,
-      lines: fixed ? [`Marked fixed by ${owner.kind === "hackney" ? meta.owner : owner.name}.`] : [],
+      lines: fixed ? [`${owner.kind === "hackney" ? meta.owner : owner.name} marked it fixed`] : ["We'll let you know"],
     },
   ];
 
@@ -215,7 +219,7 @@ export function buildTrack(report: Report, all: Report[], opts: { classification
       : owner.kind !== "hackney"
         ? { title: "Status", value: owner.kind === "other" ? `With ${owner.name}` : "Referred on", confirmed: true }
         : eta
-          ? { title: "Crew expected", value: range(eta.from, eta.to), confirmed: false }
+          ? { title: "Expected fix", value: range(eta.from, eta.to), confirmed: false }
           : { title: "Status", value: "Planning", confirmed: false };
 
   return { stages, headline, severity, family, owner, actions, target: meta.deadline, queue, eta, duplicates, councilMessage };

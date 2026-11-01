@@ -7,7 +7,6 @@ import { buildTrack } from "@/lib/report/track";
 import { Mascot, type MascotKind, type MascotMood } from "./Mascot";
 import { Timeline } from "./Timeline";
 import { DecisionTree } from "./DecisionTree";
-import { JobCard } from "./JobCard";
 import { type Decision, sendFeedback } from "@/lib/report/pipeline";
 import { CATEGORIES as SB_CATEGORIES, type WorkOrder } from "@/features/street-brain/contracts";
 import { IconTrophy } from "./icons";
@@ -373,7 +372,8 @@ export function TrackerScreen({
   reference: string;
   onDone: () => void;
 }) {
-  const track = buildTrack(report, all, { classification });
+  // The crew job card is for the council dashboard; residents see its key facts on the timeline.
+  const track = buildTrack(report, all, { classification, workOrder });
   const maxPoints = Math.max(...queue.breakdown.map((b) => b.points), 1);
 
   return (
@@ -385,12 +385,22 @@ export function TrackerScreen({
         </button>
       </div>
 
+      {report.photo_url && (
+        <div className="relative h-40 overflow-hidden rounded-[24px] bg-ink shadow-card">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={report.photo_url} alt="Your photo" className="h-full w-full object-cover" />
+          <div className="absolute inset-x-0 bottom-0 flex items-center gap-2 bg-gradient-to-t from-black/70 to-transparent p-3 pt-8 text-white">
+            <CategoryIcon category={report.category} size={28} />
+            <span className="min-w-0 flex-1 truncate text-[15px] font-semibold">{report.title}</span>
+          </div>
+        </div>
+      )}
+
       <Card className="relative overflow-hidden">
         <Mascot kind={mascot} mood="idle" className="pointer-events-none absolute -right-5 -top-4 h-[96px] w-[96px]" />
         <Timeline track={track} />
       </Card>
 
-      {workOrder && <JobCard order={workOrder} reference={reference} address={report.title.split(", ").slice(1).join(", ") || report.title} />}
 
       <Card>
         <Label>Speed it up</Label>
