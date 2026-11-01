@@ -2,13 +2,13 @@
 
 import mapboxgl from "mapbox-gl";
 import "mapbox-gl/dist/mapbox-gl.css";
-import Link from "next/link";
 import { type ReactNode, useEffect, useMemo, useRef, useState } from "react";
 import type { Hotspot } from "@/lib/council/hotspots";
 import { SUPPLY_TO_PLANNER, type OpsJob, type SupplyUnit } from "@/lib/council/ops";
 import { type CrewRoute, DEFAULT_CREWS, TRADES, type Trade, planDay } from "@/lib/council/plan";
 import { CATEGORY_META } from "@/lib/report/types";
 import { CouncilNav } from "./CouncilNav";
+import { roadRoute, type RoadRoute } from "@/lib/council/roads";
 
 // A flat, quiet OpenStreetMap basemap for back-office use (Mapbox Light renders OSM data).
 const OSM_STYLE = "mapbox://styles/mapbox/light-v11";
@@ -24,7 +24,6 @@ const PERSIST = {
   "one-off": { label: "One-off", hint: "Single burst", colour: "#9aa39d" },
 } as const;
 
-type RoadRoute = { geometry: GeoJSON.LineString; minutes: number; km: number; legs: number[] };
 export type View = "dispatch" | "hotspots";
 
 const hm = (min: number) => `${String(Math.floor(min / 60)).padStart(2, "0")}:${String(Math.round(min % 60)).padStart(2, "0")}`;
@@ -70,21 +69,15 @@ export function OpsWorkspace({
   const crew = plan.crews.find((c) => c.id === selected) ?? null;
   const unitFor = (c: CrewRoute) => unitsByTrade.get(c.trade)?.[c.index] ?? null;
 
-  // Real road route and drive times for the selected crew (OSRM over OpenStreetMap roads).
+  // Real road route and drive times for the selected crew.
   useEffect(() => {
     setRoad(null);
     if (!crew || crew.stops.length === 0) return;
     const depot = unitFor(crew);
     const start: [number, number] = depot?.depot_lon && depot.depot_lat ? [depot.depot_lon, depot.depot_lat] : DEPOT;
-    const pts = [start, ...crew.stops.map((s) => [s.job.lng, s.job.lat] as [number, number]), start].slice(0, 90);
+    const pts = [start, ...crew.stops.map((s) => [s.job.lng, s.job.lat] as [number, number]), start];
     const ctrl = new AbortController();
-    fetch(`https://router.project-osrm.org/route/v1/driving/${pts.map((p) => p.join(",")).join(";")}?overview=full&geometries=geojson`, { signal: ctrl.signal })
-      .then((r) => r.json())
-      .then((d) => {
-        const r = d.routes?.[0];
-        if (r) setRoad({ geometry: r.geometry, minutes: r.duration / 60, km: r.distance / 1000, legs: r.legs.map((l: { duration: number }) => l.duration / 60) });
-      })
-      .catch(() => {});
+    roadRoute(pts, ctrl.signal).then((r) => r && setRoad(r)).catch(() => {});
     return () => ctrl.abort();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selected, crews]);
@@ -601,26 +594,6 @@ function Chip({ icon, children }: { icon?: ReactNode; children: ReactNode }) {
   );
 }
 
-function NavItem({ label, icon, href, onClick, active, count, tone }: { label: string; icon: ReactNode; href?: string; onClick?: () => void; active?: boolean; count?: number; tone?: "terra" }) {
-  const cls = `flex w-full items-center gap-3 rounded-[12px] px-2.5 py-2 text-[13.5px] transition ${active ? "bg-card font-semibold shadow-card" : "text-ink/80 hover:bg-card/60"}`;
-  const body = (
-    <>
-      <span className="text-ink/70">{icon}</span>
-      <span className="flex-1 text-left">{label}</span>
-      {count != null && <span className={`grid h-5 min-w-5 place-items-center rounded-full px-1.5 text-[10.5px] font-semibold tabular-nums text-white ${tone === "terra" ? "bg-[#b8573f]" : "bg-[#10261f]"}`}>{count}</span>}
-    </>
-  );
-  return href ? (
-    <Link href={href} className={cls}>
-      {body}
-    </Link>
-  ) : (
-    <button onClick={onClick} className={cls}>
-      {body}
-    </button>
-  );
-}
-
 const initials = (s: string) =>
   s
     .replace(/[^A-Za-z ]/g, " ")
@@ -631,11 +604,7 @@ const initials = (s: string) =>
     .join("");
 
 const svg = { viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: 1.8, strokeLinecap: "round" as const, strokeLinejoin: "round" as const };
-const IconHome = () => (<svg {...svg} className="h-[18px] w-[18px]"><path d="M4 11l8-6 8 6v8a1 1 0 01-1 1h-4v-5h-6v5H5a1 1 0 01-1-1z" /></svg>);
-const IconRoute = () => (<svg {...svg} className="h-[18px] w-[18px]"><circle cx="6" cy="18" r="2" /><circle cx="18" cy="6" r="2" /><path d="M8 18h7a3 3 0 000-6H9a3 3 0 010-6h7" /></svg>);
 const IconFlame = () => (<svg {...svg} className="h-[18px] w-[18px]"><path d="M12 21c-3.5 0-6-2.4-6-5.6 0-3.2 2.5-5 3.5-8.4 2 1.4 3 3.2 3 5 1-.8 1.6-2 1.8-3.2C16.3 10.4 18 12.8 18 15.4 18 18.6 15.5 21 12 21z" /></svg>);
-const IconPin = () => (<svg {...svg} className="h-[18px] w-[18px]"><path d="M12 21s-6-5.5-6-11a6 6 0 0112 0c0 5.5-6 11-6 11z" /><circle cx="12" cy="10" r="2.2" /></svg>);
-const IconTruck = () => (<svg {...svg} className="h-[18px] w-[18px]"><path d="M3 6h11v10H3zM14 10h4l3 3v3h-7" /><circle cx="7" cy="17.5" r="1.8" /><circle cx="17" cy="17.5" r="1.8" /></svg>);
 const IconCalendar = () => (<svg {...svg} className="h-4 w-4"><rect x="4" y="5" width="16" height="15" rx="2.5" /><path d="M4 10h16M9 3v4M15 3v4" /></svg>);
 const IconChevron = ({ className = "" }: { className?: string }) => (<svg {...svg} strokeWidth={2.2} className={`h-4 w-4 ${className}`}><path d="M9 6l6 6-6 6" /></svg>);
 const IconPlus = () => (<svg {...svg} strokeWidth={2.2} className="h-3.5 w-3.5"><path d="M12 5v14M5 12h14" /></svg>);
