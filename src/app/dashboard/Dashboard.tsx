@@ -1,7 +1,7 @@
 "use client";
 
+import WorkspaceNav from "./WorkspaceNav";
 import { useEffect, useRef, useState, type ReactNode, type FormEvent } from "react";
-import Link from "next/link";
 import { actions, ageBand, ageLabels, areas, capacity, decide, finance, readDecisions, severities, snapshot, storageKey, summarise, type Action, type AreaFilter, type Decisions, type Decision, type Issue, type Severity } from "@/lib/dashboard/model";
 
 const money = (n: number) => new Intl.NumberFormat("en-GB", { style: "currency", currency: "GBP", maximumFractionDigits: 0 }).format(n);
@@ -20,7 +20,6 @@ function Icon({ name, size = 21 }: { name: string; size?: number }) {
   };
   return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">{paths[name] ?? paths.arrow}</svg>;
 }
-function Brand() { return <div className="pm-brand"><svg width="41" height="41" viewBox="0 0 40 40" aria-hidden="true"><circle cx="20" cy="20" r="19" fill="currentColor" /><path d="M12 2v36m16-36v36M12 20h16" stroke="var(--canvas)" strokeWidth="6" /></svg><span>One <br />Hackney</span></div>; }
 function Badge({ severity }: { severity: Severity }) { return <span className={`pm-badge ${tone(severity)}`}>{severity}</span>; }
 function Drawer({ title, children, close }: { title: string; children: ReactNode; close: () => void }) {
   const ref = useRef<HTMLDialogElement>(null);
@@ -100,7 +99,7 @@ export default function Dashboard() {
       return null;
     } catch (e) { return e instanceof Error ? e.message : "Could not record decision."; }
   }
-  return <div className="pm-dashboard"><a href="#pm-content" className="pm-skip">Skip to dashboard</a><aside className="pm-sidebar"><Link href="/" aria-label="One Hackney home"><Brand /></Link><nav aria-label="Dashboard"><a className="active" href="#pm-content"><Icon name="home" />Overview</a><button onClick={() => openList("Open repairs", summary.open)}><Icon name="repair" />Repairs</button><a href="#pm-approvals"><Icon name="approval" />Approvals<span className="pm-nav-count">{pending.length}</span></a><a href="#pm-capacity"><Icon name="resources" />Resources</a><a href="#pm-delivery"><Icon name="report" />Reports</a></nav><div className="pm-sidebar-footer"><span>Hackney<br /><small>London Borough</small></span><button className="pm-text-button" onClick={() => setResetting(true)} disabled={!ready}>Reset demo</button></div></aside>
+  return <div className="pm-dashboard"><a href="#pm-content" className="pm-skip">Skip to dashboard</a><WorkspaceNav active="overview" pending={pending.length} onReset={() => setResetting(true)} ready={ready} />
     <main id="pm-content" className="pm-content"><header className="pm-header"><div><h1>Repairs overview</h1><p>1 November 2026 <span className="pm-header-divider">/</span> <span className="pm-demo">Demo · Illustrative data</span></p></div><div className="pm-filters"><label><span className="pm-sr-only">Service area</span><select value={area} onChange={e => { setArea(e.target.value as AreaFilter); setShowReviewed(false); }}><option value="all">All service areas</option>{areas.map(a => <option key={a}>{a}</option>)}</select></label><label><Icon name="calendar" size={18} /><span className="pm-sr-only">Reporting period</span><select value={days} onChange={e => setDays(Number(e.target.value))}><option value={30}>Last 30 days</option><option value={7}>Last 7 days</option></select></label></div></header>
     {(notice || storageWarning) && <div className="pm-notices" role="status">{storageWarning || notice}<button className="pm-icon-button" aria-label="Dismiss notification" onClick={() => { setNotice(""); setStorageWarning(""); }}><Icon name="close" size={16} /></button></div>}
     <section className="pm-card pm-finance" aria-label={`Illustrative ${days}-day financial envelope`}><div className="pm-finance-values">{[[`Budget · ${days} days`, cash.budget], ["Spent", cash.spent], ["Committed", cash.committed], ["Available", cash.available]].map(([label, amount], i) => <div key={label} className={`pm-finance-value finance-${i}`}><span>{label}</span><strong>{money(amount as number)}</strong></div>)}</div><div className="pm-budget-bar" role="img" aria-label={`${money(cash.spent)} spent, ${money(cash.committed)} committed, ${money(cash.available)} available of ${money(cash.budget)}`}><span className="spent" style={{ width: `${cash.spent / cash.budget * 100}%` }} /><span className="committed" style={{ width: `${cash.committed / cash.budget * 100}%` }} /><span className="available" style={{ flex: 1 }} /></div></section>
