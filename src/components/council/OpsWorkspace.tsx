@@ -8,6 +8,7 @@ import type { Hotspot } from "@/lib/council/hotspots";
 import { SUPPLY_TO_PLANNER, type OpsJob, type SupplyUnit } from "@/lib/council/ops";
 import { type CrewRoute, DEFAULT_CREWS, TRADES, type Trade, planDay } from "@/lib/council/plan";
 import { CATEGORY_META } from "@/lib/report/types";
+import { CouncilNav } from "./CouncilNav";
 
 // A flat, quiet OpenStreetMap basemap for back-office use (Mapbox Light renders OSM data).
 const OSM_STYLE = "mapbox://styles/mapbox/light-v11";
@@ -24,25 +25,26 @@ const PERSIST = {
 } as const;
 
 type RoadRoute = { geometry: GeoJSON.LineString; minutes: number; km: number; legs: number[] };
-type View = "dispatch" | "hotspots";
+export type View = "dispatch" | "hotspots";
 
 const hm = (min: number) => `${String(Math.floor(min / 60)).padStart(2, "0")}:${String(Math.round(min % 60)).padStart(2, "0")}`;
 const hatch = (c: string) => `repeating-linear-gradient(135deg, rgba(255,255,255,.28) 0 2px, transparent 2px 7px), ${c}`;
 
 export function OpsWorkspace({
+  view,
   jobs,
   supply,
   hotspots,
   withWorkOrders,
   error,
 }: {
+  view: View;
   jobs: OpsJob[];
   supply: SupplyUnit[];
   hotspots: Hotspot[];
   withWorkOrders: number;
   error: string | null;
 }) {
-  const [view, setView] = useState<View>("dispatch");
 
   // Crews per trade start from the available supply units.
   const unitsByTrade = useMemo(() => {
@@ -110,61 +112,12 @@ export function OpsWorkspace({
   const today = new Date().toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long" });
 
   return (
-    <div className="min-h-dvh bg-[#e9e9e5] p-3 text-ink">
-      <div className="flex min-h-[calc(100dvh-24px)] gap-3 rounded-[28px] bg-canvas p-3">
-        {/* Sidebar */}
-        <aside className="sticky top-3 flex h-[calc(100dvh-48px)] w-[232px] shrink-0 flex-col px-2 py-3">
-          <Link href="/" className="flex items-center gap-2.5 px-2">
-            <span className="flex">
-              <span className="h-5 w-5 rounded-full bg-hackney" />
-              <span className="-ml-2 h-5 w-5 rounded-full bg-hackney-bright mix-blend-multiply" />
-            </span>
-            <span className="text-[17px] font-semibold tracking-[-0.02em]">One Hackney</span>
-          </Link>
-
-          <div className="mt-5 flex items-center gap-3 rounded-[16px] bg-card p-3 shadow-card">
-            <span className="grid h-9 w-9 place-items-center rounded-[10px] bg-hackney text-[11px] font-bold text-white">LBH</span>
-            <span className="min-w-0 leading-tight">
-              <span className="block truncate text-[13px] font-semibold">Hackney Council</span>
-              <span className="block truncate text-[11.5px] text-muted">Streets · {jobs.length} open jobs</span>
-            </span>
-          </div>
-
-          <p className="mt-6 px-2 text-[11.5px] text-muted">Workspace</p>
-          <nav className="mt-1.5 space-y-0.5">
-            <NavItem href="/dashboard" icon={<IconHome />} label="Repairs overview" />
-            <NavItem active={view === "dispatch"} onClick={() => setView("dispatch")} icon={<IconRoute />} label="Dispatch" count={scheduled} />
-            <NavItem active={view === "hotspots"} onClick={() => setView("hotspots")} icon={<IconFlame />} label="Hotspots" count={repeat.length} tone="terra" />
-          </nav>
-          <p className="mt-5 px-2 text-[11.5px] text-muted">Resident side</p>
-          <nav className="mt-1.5 space-y-0.5">
-            <NavItem href="/" icon={<IconPin />} label="Resident app" />
-            <NavItem href="/council" icon={<IconTruck />} label="Day planner" />
-          </nav>
-
-          <div className="mt-auto rounded-[16px] bg-card p-3.5 shadow-card">
-            <p className="flex items-center gap-2 text-[12.5px] font-semibold">
-              <span className="h-2 w-2 rounded-full bg-hackney-bright" />
-              Street brain is live
-            </p>
-            <p className="mt-1 text-[11.5px] leading-snug text-muted">
-              {withWorkOrders} of {jobs.length} jobs have an AI work order with crew, kit and time on site.
-            </p>
-          </div>
-          <div className="mt-3 flex items-center gap-3 rounded-[16px] bg-card p-3 shadow-card">
-            <span className="grid h-8 w-8 place-items-center rounded-full bg-canvas text-[11px] font-semibold">AO</span>
-            <span className="leading-tight">
-              <span className="block text-[12.5px] font-semibold">Area operations</span>
-              <span className="block text-[11px] text-muted">Duty manager</span>
-            </span>
-          </div>
-        </aside>
-
-        {/* Main */}
-        <main className="min-w-0 flex-1 py-1.5 pr-1.5">
+    <div className="flex min-h-dvh bg-canvas text-ink">
+        <CouncilNav active={view} counts={{ dispatch: { n: scheduled }, hotspots: { n: repeat.length, tone: "terra" } }} />
+        <main className="min-w-0 flex-1 px-6 py-6">
           <header className="flex flex-wrap items-end gap-3">
             <div>
-              <p className="text-[12px] text-muted">London Borough of Hackney · {today}</p>
+              <p className="text-[12px] text-muted">London Borough of Hackney · {today} · {withWorkOrders} of {jobs.length} jobs have an AI work order</p>
               <h1 className="mt-0.5 text-[28px] font-medium tracking-[-0.03em]">{view === "dispatch" ? "Dispatch" : "Hotspots"}</h1>
             </div>
             <div className="ml-auto flex items-center gap-2">
@@ -301,7 +254,6 @@ export function OpsWorkspace({
             <HotspotsView hotspots={hotspots} selected={hotspot} onSelect={setHotspot} jobs={jobs} />
           )}
         </main>
-      </div>
     </div>
   );
 }

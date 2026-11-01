@@ -263,7 +263,16 @@ export function ReportApp() {
 
       {/* Desktop overlay: title, live counts, mascot picker. */}
       <div className="pointer-events-none absolute right-6 top-6 z-20 hidden w-[300px] space-y-3 md:block">
-        <Link href="/dashboard" className="pointer-events-auto flex items-center justify-between rounded-[20px] bg-white px-5 py-3.5 text-[14px] font-semibold text-hackney shadow-card transition hover:bg-hackney-tint focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white">Council workspace <span aria-hidden="true">→</span></Link>
+        <Link href="/dashboard" className="group pointer-events-auto flex items-center gap-3 rounded-[20px] bg-white p-3 pr-4 shadow-card transition hover:-translate-y-0.5 hover:shadow-card-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white">
+          <span className="grid h-11 w-11 shrink-0 place-items-center rounded-[14px] bg-hackney text-white">
+            <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><rect x="3.5" y="4" width="7" height="7" rx="1.8" /><rect x="13.5" y="4" width="7" height="7" rx="1.8" /><rect x="3.5" y="14" width="7" height="6" rx="1.8" /><path d="M13.5 17h7M17 14v6" /></svg>
+          </span>
+          <span className="min-w-0 flex-1 leading-tight">
+            <span className="block text-[14px] font-semibold text-ink">Council workspace</span>
+            <span className="block truncate text-[12px] text-muted">Repairs, hotspots, schedule, dispatch</span>
+          </span>
+          <svg viewBox="0 0 24 24" className="h-4 w-4 text-muted transition group-hover:translate-x-0.5 group-hover:text-hackney" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" aria-hidden="true"><path d="M9 6l6 6-6 6" /></svg>
+        </Link>
         <div className="pointer-events-auto rounded-[16px] bg-black/55 px-4 py-3 text-[13px] text-white backdrop-blur-xl ring-1 ring-white/10">{mapStyle === "game" ? "Use the arrow keys to move the map" : "Click the map, then use the arrow keys to move"} <span aria-hidden="true">↑ ↓ ← →</span></div>
         <div className="pointer-events-auto rounded-[24px] bg-black/55 p-5 text-white backdrop-blur-xl ring-1 ring-white/10">
           <p className="font-mono text-[10.5px] uppercase tracking-[0.16em] text-hackney-lime">One Hackney</p>

@@ -30,14 +30,14 @@ function DeliveryChart({ data }: { data: ReturnType<typeof summarise>["trend"] }
   const max = Math.max(10, ...data.map(d => Math.max(d.fixed, d.arrivals)));
   const ceiling = Math.ceil(max / 10) * 10;
   const width = 470, height = 138, step = width / data.length;
-  const colors: Record<string, string> = { High: "#568b80", Elevated: "#8bb0a3", Routine: "#c2d1b6", Emergency: "#bf7965", Unassessed: "#c7cdca" };
+  const colors: Record<string, string> = { High: "#00664f", Elevated: "#00b341", Routine: "#d7ebbd", Emergency: "#b8573f", Unassessed: "#c7cdca" };
   const [hover, setHover] = useState<number | null>(null);
   return <div className="pm-chart-wrap"><svg viewBox="0 0 540 195" role="img" aria-label={`Delivery trend: ${data.reduce((n, d) => n + d.fixed, 0)} reported fixed and ${data.reduce((n, d) => n + d.arrivals, 0)} new issues. Exact counts in chart details.`}>
     {[0, 1, 2, 3].map(t => <g key={t}><line x1="35" y1={15 + height * t / 3} x2="520" y2={15 + height * t / 3} stroke="#e7e9e4" /><text x="26" y={19 + height * t / 3} textAnchor="end">{Math.round(ceiling * (1 - t / 3))}</text></g>)}
     {data.map((d, index) => { let offset = 0; return <g key={d.label} onMouseEnter={() => setHover(index)} onMouseLeave={() => setHover(null)}><title>{`${d.label}: ${d.fixed} reported fixed, ${d.arrivals} new`}</title>{severities.map((s, si) => { const h = d.counts[si] / ceiling * height; const y = 15 + height - offset - h; offset += h; return <rect key={s} x={43 + index * step} y={y} width={step * 0.65} height={h} fill={colors[s]} rx="1" />; })}<text x={43 + index * step + step * 0.325} y="180" textAnchor="middle">{d.label}</text></g>; })}
-    <polyline points={data.map((d, i) => `${43 + i * step + step * 0.325},${15 + height - d.arrivals / ceiling * height}`).join(" ")} fill="none" stroke="#64716f" strokeWidth="2" />
-    {data.map((d, i) => <circle key={d.label} cx={43 + i * step + step * 0.325} cy={15 + height - d.arrivals / ceiling * height} r={hover === i ? 5 : 3.5} fill="#64716f"><title>{`${d.label}: ${d.arrivals} new`}</title></circle>)}
-  </svg><div className="pm-chart-legend">{["Routine", "Elevated", "High", "New"].map(s => <span key={s}><i style={{ background: colors[s] ?? "#64716f" }} />{s}</span>)}</div></div>;
+    <polyline points={data.map((d, i) => `${43 + i * step + step * 0.325},${15 + height - d.arrivals / ceiling * height}`).join(" ")} fill="none" stroke="#141414" strokeWidth="2" />
+    {data.map((d, i) => <circle key={d.label} cx={43 + i * step + step * 0.325} cy={15 + height - d.arrivals / ceiling * height} r={hover === i ? 5 : 3.5} fill="#141414"><title>{`${d.label}: ${d.arrivals} new`}</title></circle>)}
+  </svg><div className="pm-chart-legend">{["Routine", "Elevated", "High", "New"].map(s => <span key={s}><i style={{ background: colors[s] ?? "#141414" }} />{s}</span>)}</div></div>;
 }
 function Review({ action, decision, save }: { action: Action; decision?: Decision; save: (status: Decision["status"], reason: string) => string | null }) {
   const [choice, setChoice] = useState<Decision["status"]>("approved");
