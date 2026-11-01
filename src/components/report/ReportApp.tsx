@@ -42,7 +42,7 @@ function metres(a: LatLng, b: LatLng) {
 export function ReportApp() {
   const { player, act, reset } = usePlayer();
   const [mascot, setMascot] = useState<MascotKind>("fields");
-  const [mapStyle, setMapStyle] = useState<"mapbox" | "satellite" | "game">(HAS_MAPBOX ? "mapbox" : "game");
+  const [mapStyle, setMapStyle] = useState<"mapbox" | "game">(HAS_MAPBOX ? "mapbox" : "game");
   // Day/night follows the clock by default (7am to 7pm is day); the panel can override it.
   const [theme, setTheme] = useState<"night" | "day">(() => {
     const h = new Date().getHours();
@@ -183,8 +183,6 @@ export function ReportApp() {
       <div className="absolute inset-0 hidden md:block">
         {mapStyle !== "game" ? (
           <NightMap
-            key={mapStyle}
-            variant={mapStyle === "satellite" ? "satellite" : "standard"}
             reports={reports}
             focus={focus}
             dropped={dropped}
@@ -241,7 +239,7 @@ export function ReportApp() {
         <div className="pointer-events-auto flex items-center justify-between rounded-[20px] bg-black/55 p-3 text-white backdrop-blur-xl ring-1 ring-white/10">
           <span className="pl-2 text-[12.5px] text-white/70">Map</span>
           <div className="flex gap-1">
-            {(["mapbox", "satellite", "game"] as const).map((m) => (
+            {(["mapbox", "game"] as const).map((m) => (
               <button
                 key={m}
                 onClick={() => setMapStyle(m)}
@@ -249,7 +247,7 @@ export function ReportApp() {
                 title={m !== "game" && !HAS_MAPBOX ? "Set NEXT_PUBLIC_MAPBOX_TOKEN" : undefined}
                 className={`rounded-full px-3 py-1.5 text-[12.5px] font-medium disabled:opacity-40 ${mapStyle === m ? "bg-white text-ink" : "text-white/70 hover:text-white"}`}
               >
-                {m === "mapbox" ? "3D" : m === "satellite" ? "Satellite" : "Game"}
+                {m === "mapbox" ? "3D" : "Game"}
               </button>
             ))}
           </div>

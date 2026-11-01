@@ -18,8 +18,6 @@ type Props = {
   questIds: string[];
   onSelect?: (report: Report) => void;
   theme: "night" | "day";
-  /** Standard 3D, or the same 3D buildings over satellite imagery. */
-  variant: "standard" | "satellite";
 };
 
 function toGeoJSON(reports: Report[], questIds: string[]): GeoJSON.FeatureCollection {
@@ -41,15 +39,13 @@ function toGeoJSON(reports: Report[], questIds: string[]): GeoJSON.FeatureCollec
 }
 
 /** Mapbox Standard style at night: 3D buildings and landmarks, glowing report pins. */
-export function NightMap({ reports, focus, dropped, questIds, onSelect, theme, variant }: Props) {
+export function NightMap({ reports, focus, dropped, questIds, onSelect, theme }: Props) {
   const container = useRef<HTMLDivElement>(null);
   const map = useRef<mapboxgl.Map | null>(null);
   const marker = useRef<mapboxgl.Marker | null>(null);
   const idleSpin = useRef(true);
   // The style loads with the starting light; later changes go through setConfigProperty.
   const initialTheme = useRef(theme);
-  // Each variant mounts its own map (the parent keys on it), so this is fixed for the map's life.
-  const initialVariant = useRef(variant);
   const latest = useRef({ reports, questIds, onSelect });
   latest.current = { reports, questIds, onSelect };
 
@@ -63,7 +59,7 @@ export function NightMap({ reports, focus, dropped, questIds, onSelect, theme, v
     mapboxgl.accessToken = token;
     const m = new mapboxgl.Map({
       container: container.current,
-      style: initialVariant.current === "satellite" ? "mapbox://styles/mapbox/standard-satellite" : "mapbox://styles/mapbox/standard",
+      style: "mapbox://styles/mapbox/standard",
       config: {
         basemap: {
           lightPreset: initialTheme.current,
@@ -144,8 +140,7 @@ export function NightMap({ reports, focus, dropped, questIds, onSelect, theme, v
     m.on("touchstart", stop);
     m.on("wheel", stop);
     const spin = () => {
-      // Satellite tiles are rate-limited, so don't keep requesting new ones while idle.
-      if (!idleSpin.current || !map.current || initialVariant.current === "satellite") return;
+      if (!idleSpin.current || !map.current) return;
       m.easeTo({ bearing: m.getBearing() + 6, duration: 4000, easing: (t) => t });
     };
     m.on("moveend", spin);

@@ -1,6 +1,6 @@
 // Shared contracts for the Report module. See AGENTS.md "Report module contracts".
 
-export const CATEGORIES = ["pothole", "flytip", "streetlight", "graffiti", "pavement"] as const;
+export const CATEGORIES = ["pothole", "flytip", "litter", "parking", "streetlight", "graffiti", "pavement"] as const;
 export type Category = (typeof CATEGORIES)[number];
 
 export type LatLng = { lat: number; lng: number };
@@ -56,6 +56,8 @@ export type Report = LatLng & {
 export const CATEGORY_META: Record<Category, { label: string; colour: string; owner: string; deadline: string }> = {
   pothole: { label: "Pothole", colour: "#f08a24", owner: "Hackney Highways", deadline: "28 days (24h if dangerous)" },
   flytip: { label: "Fly-tip", colour: "#7b5cff", owner: "Hackney Waste", deadline: "24 hours" },
+  litter: { label: "Litter", colour: "#2bb3c0", owner: "Hackney Cleansing", deadline: "24 hours" },
+  parking: { label: "Parking", colour: "#4f8cff", owner: "Hackney Parking Enforcement", deadline: "Same day (patrols)" },
   streetlight: { label: "Streetlight", colour: "#ffc93c", owner: "Hackney Street Lighting", deadline: "7 days" },
   graffiti: { label: "Graffiti", colour: "#ff5a4e", owner: "Hackney Cleansing", deadline: "7 days (24h if offensive)" },
   pavement: { label: "Pavement", colour: "#00b341", owner: "Hackney Highways", deadline: "28 days" },

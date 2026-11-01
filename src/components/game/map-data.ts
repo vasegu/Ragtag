@@ -33,12 +33,12 @@ export type GameReport = {
   id: string;
   lat: number;
   lng: number;
-  category: "pothole" | "flytip" | "streetlight" | "graffiti" | "pavement";
+  category: "pothole" | "flytip" | "litter" | "parking" | "streetlight" | "graffiti" | "pavement";
   status?: "open" | "scheduled" | "fixed";
 };
 
 export const CATEGORY_COLOURS: Record<GameReport["category"], string> = {
-  pothole: "#f08a24", flytip: "#7b5cff", streetlight: "#ffc93c", graffiti: "#ff5a4e", pavement: "#00b341",
+  pothole: "#f08a24", flytip: "#7b5cff", litter: "#2bb3c0", parking: "#4f8cff", streetlight: "#ffc93c", graffiti: "#ff5a4e", pavement: "#00b341",
 };
 
 let mapRequest: Promise<GameMapData> | undefined;

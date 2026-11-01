@@ -29,6 +29,8 @@ const STREETS: [string, number, number][] = [
 const TITLES: Record<Category, string[]> = {
   pothole: ["Deep pothole in the bus lane", "Pothole by the zebra crossing", "Cluster of potholes", "Sunken patch after roadworks"],
   flytip: ["Mattress dumped on the corner", "Bin bags piled by the wall", "Fridge left on the pavement", "Building rubble dumped"],
+  litter: ["Litter all along the kerb", "Overflowing litter bin", "Dog fouling on the pavement", "Broken glass by the bus stop"],
+  parking: ["Car parked on the pavement", "Van blocking the dropped kerb", "Abandoned car, no plates", "Parking in the bike lane"],
   streetlight: ["Streetlight out", "Light flickering all night", "Lamp post leaning", "Three lights out in a row"],
   graffiti: ["Tags on the shop shutter", "Graffiti on the bus shelter", "Offensive graffiti on a wall", "Tags on the railway bridge"],
   pavement: ["Lifted paving slab", "Cracked kerb", "Tree root lifting the pavement", "Loose slabs outside the school"],

@@ -588,6 +588,10 @@ export function VerifySheet({ report, onAnswer, onClose }: { report: Report; onA
             <p className="text-[12.5px] text-muted">Reported {daysAgo(report.created_at)} · {report.confirmations} neighbours confirmed</p>
           </div>
         </div>
+        {report.photo_url && (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={report.photo_url} alt="Photo from the original report" className="mt-4 h-40 w-full rounded-[18px] object-cover" />
+        )}
         <p className="mt-4 text-[15px]">Is it still there? Your answer moves it up the queue, or closes it.</p>
         <div className="mt-4 grid grid-cols-2 gap-2">
           <button onClick={() => onAnswer("there")} className="h-12 rounded-full bg-ink text-[15px] font-semibold text-white">

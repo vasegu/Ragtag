@@ -10,7 +10,7 @@ const HackneyGame = dynamic(() => import("@/components/game/HackneyGame"), {
   ssr: false,
   loading: () => <div className="game-load-state" role="status">Opening the night map…</div>,
 });
-const names: Record<GameReport["category"], string> = { pothole: "Pothole", flytip: "Fly-tipping", streetlight: "Street light", graffiti: "Graffiti", pavement: "Pavement" };
+const names: Record<GameReport["category"], string> = { pothole: "Pothole", flytip: "Fly-tipping", litter: "Litter", parking: "Parking", streetlight: "Street light", graffiti: "Graffiti", pavement: "Pavement" };
 
 export default function GamePage() {
   const [reports, setReports] = useState<GameReport[]>([]);

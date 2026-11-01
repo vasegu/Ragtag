@@ -3,7 +3,7 @@ import { CATEGORY_META } from "./types";
 
 // Mock ranking until Santiago's QUEUE_URL is live. Same output contract (QueueInfo).
 
-const DEADLINE_DAYS: Record<Category, number> = { pothole: 28, flytip: 1, streetlight: 7, graffiti: 7, pavement: 28 };
+const DEADLINE_DAYS: Record<Category, number> = { pothole: 28, flytip: 1, litter: 1, parking: 1, streetlight: 7, graffiti: 7, pavement: 28 };
 /** Modelled capacity: jobs cleared per working day across all crews. Hackney doesn't publish this. */
 const JOBS_PER_DAY = 14;
 
