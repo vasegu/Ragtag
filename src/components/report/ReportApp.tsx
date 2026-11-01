@@ -7,6 +7,7 @@ import { type Reward, usePlayer } from "@/lib/report/game";
 import { type Category, CATEGORY_META, type Classification, DEMO_LOCATION, type LatLng, type QueueInfo, type Report } from "@/lib/report/types";
 import type { MascotKind } from "./Mascot";
 import { NightMap } from "./NightMap";
+import { heatPoints } from "@/components/heatmap/model";
 import { BadgesScreen, BoardScreen, CaptureScreen, HomeScreen, RewardOverlay, ScanScreen, StreakSheet, TrackerScreen, VerifySheet } from "./screens";
 import { AskTab, FrontDoor, NearbyTab, type Tab, TabBar } from "./tabs";
 import { IconMoon, IconSun } from "./icons";
@@ -135,6 +136,7 @@ export function ReportApp() {
   );
   const questIds = useMemo(() => quests.map((q) => q.id), [quests]);
   const visibleReports = useMemo(() => reports.filter((r) => !hidden.has(r.category)), [reports, hidden]);
+  const heat = useMemo(() => heatPoints(visibleReports), [visibleReports]);
   const nearby = useMemo(() => reports.map((r) => ({ ...r, distance: metres(location, r) })).sort((a, b) => a.distance - b.distance), [reports, location]);
   const active = useMemo(
     () => (submitted ? { report: submitted, track: buildTrack(submitted, reports, { classification, workOrder: pipeline.result?.workOrder ?? null }) } : null),
@@ -260,6 +262,7 @@ export function ReportApp() {
         ) : (
           <HackneyGame
             reports={visibleReports}
+            heat={heat}
             focus={focus}
             theme={theme}
             onSelect={(id) => {

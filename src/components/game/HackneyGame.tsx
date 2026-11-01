@@ -6,6 +6,8 @@ import { Html, Stars } from "@react-three/drei";
 import { AdditiveBlending, BackSide, BufferAttribute, BufferGeometry, CanvasTexture, Color, CylinderGeometry, DataTexture, Euler, IcosahedronGeometry, type InstancedMesh, LinearFilter, Matrix4, MeshToonMaterial, Quaternion, RedFormat, SRGBColorSpace, Vector3 } from "three";
 import { CameraRig } from "./CameraRig";
 import { ReportBeacons } from "./ReportBeacons";
+import { GameHeat } from "@/components/heatmap/GameHeat";
+import type { HeatPoint } from "@/components/heatmap/model";
 import { loadGameMap, type GameMapData, type GameReport } from "./map-data";
 import type { MeshData, SceneGeometry } from "./geometry";
 
@@ -20,6 +22,8 @@ export type HackneyGameProps = {
   theme?: GameTheme;
   /** Called with a report id when its beacon is clicked. */
   onSelect?: (id: string) => void;
+  /** Priority-location heat points, drawn as ground glow under the pins. */
+  heat?: HeatPoint[];
 };
 const NO_REPORTS: GameReport[] = [];
 
@@ -215,7 +219,7 @@ function Sky({ theme }: { theme: GameTheme }) {
   </>;
 }
 
-function Scene({ data, built, reports, focus, reducedMotion, theme, onSelect }: { data: GameMapData; built: SceneGeometry; reports: GameReport[]; focus: HackneyGameProps["focus"]; reducedMotion: boolean; theme: GameTheme; onSelect?: (id: string) => void }) {
+function Scene({ data, built, reports, focus, reducedMotion, theme, onSelect, heat }: { data: GameMapData; built: SceneGeometry; reports: GameReport[]; focus: HackneyGameProps["focus"]; reducedMotion: boolean; theme: GameTheme; onSelect?: (id: string) => void; heat?: HeatPoint[] }) {
   const palette = PALETTE[theme];
   const glow = useMemo(glowTexture, []);
   useEffect(() => () => glow.dispose(), [glow]);
@@ -226,6 +230,7 @@ function Scene({ data, built, reports, focus, reducedMotion, theme, onSelect }: 
     <directionalLight position={[-1800, 3000, 1200]} color={palette.sun[0]} intensity={palette.sun[1]} />
     <directionalLight position={[1200, 900, -1500]} color={palette.rim[0]} intensity={palette.rim[1]} />
     <City built={built} data={data} theme={theme} />
+    {heat?.length ? <GameHeat heat={heat} origin={data.origin} /> : null}
     <ReportBeacons reports={reports} origin={data.origin} glow={glow} reducedMotion={reducedMotion} onSelect={onSelect} day={theme === "day"} />
     <CameraRig focus={focus} origin={data.origin} reducedMotion={reducedMotion} />
   </>;
@@ -240,7 +245,7 @@ class SceneBoundary extends Component<{ children: ReactNode }, { failed: boolean
   }
 }
 
-export default function HackneyGame({ reports = NO_REPORTS, focus = null, onMapReady, theme = "night", onSelect }: HackneyGameProps) {
+export default function HackneyGame({ reports = NO_REPORTS, focus = null, onMapReady, theme = "night", onSelect, heat }: HackneyGameProps) {
   const [loaded, setLoaded] = useState<{ data: GameMapData; built: SceneGeometry } | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [attempt, setAttempt] = useState(0);
@@ -274,7 +279,7 @@ export default function HackneyGame({ reports = NO_REPORTS, focus = null, onMapR
   return <div style={{ position: "absolute", inset: 0, background: PALETTE[theme].bg, transition: "background 400ms" }}>
     {loaded ? <SceneBoundary>
       <Canvas camera={{ position: [3100, 5800, 5300], fov: 42, near: 10, far: 30000 }} dpr={[1, 1.25]} gl={{ antialias: true, alpha: false, powerPreference: "high-performance", logarithmicDepthBuffer: true }} fallback={<div className="game-load-state" role="alert">This map needs a browser with WebGL enabled.</div>}>
-        <Scene data={loaded.data} built={loaded.built} reports={reports} focus={focus} reducedMotion={reducedMotion} theme={theme} onSelect={onSelect} />
+        <Scene data={loaded.data} built={loaded.built} reports={reports} focus={focus} reducedMotion={reducedMotion} theme={theme} onSelect={onSelect} heat={heat} />
       </Canvas>
     </SceneBoundary> : <div className="game-load-state" role={error ? "alert" : "status"}>
       <svg className="game-loading-mark" viewBox="0 0 24 24" width="22" height="22" fill="currentColor" aria-hidden="true"><path d="M12 3c.7 4.5 2.5 6.3 7 7-4.5.7-6.3 2.5-7 7-.7-4.5-2.5-6.3-7-7 4.5-.7 6.3-2.5 7-7z" /></svg>

@@ -4,6 +4,9 @@ import mapboxgl from "mapbox-gl";
 import "mapbox-gl/dist/mapbox-gl.css";
 import { useEffect, useRef } from "react";
 import { CATEGORY_META, type LatLng, type Report } from "@/lib/report/types";
+import { circlePaint, heatPoints, toFeatureCollection } from "@/components/heatmap/model";
+
+const heatData = (reports: Report[]) => toFeatureCollection(heatPoints(reports));
 
 // Start close over London Fields: Mapbox only draws 3D buildings and landmarks from about zoom 15.
 const START_CENTER: [number, number] = [-0.0612, 51.5418];
@@ -81,6 +84,15 @@ export function NightMap({ reports, focus, dropped, questIds, onSelect, theme }:
 
     m.on("style.load", () => {
       m.addSource("reports", { type: "geojson", data: toGeoJSON(latest.current.reports, latest.current.questIds) });
+      // Priority-location heat: computed once per reports change, drawn under the pins.
+      m.addSource("heat", { type: "geojson", data: heatData(latest.current.reports) });
+      m.addLayer({
+        id: "heat",
+        type: "circle",
+        source: "heat",
+        slot: "top",
+        paint: circlePaint() as mapboxgl.CirclePaint,
+      });
       // Soft halo, then a bright core; emissive so they glow under the night lighting.
       m.addLayer({
         id: "report-halo",
@@ -171,6 +183,11 @@ export function NightMap({ reports, focus, dropped, questIds, onSelect, theme }:
     const source = map.current?.getSource("reports") as mapboxgl.GeoJSONSource | undefined;
     source?.setData(toGeoJSON(reports, questIds));
   }, [reports, questIds]);
+
+  // Separate from the pins so quest changes don't recompute the heat.
+  useEffect(() => {
+    (map.current?.getSource("heat") as mapboxgl.GeoJSONSource | undefined)?.setData(heatData(reports));
+  }, [reports]);
 
   useEffect(() => {
     if (!focus || !map.current) return;
