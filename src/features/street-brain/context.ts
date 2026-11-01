@@ -3,8 +3,6 @@ import { externalJson } from './http';
 import type { Context, Location } from './contracts';
 import { db } from './db';
 
-const osmElement=z.object({type:z.string(),id:z.number(),lat:z.number().optional(),lon:z.number().optional(),
-  center:z.object({lat:z.number(),lon:z.number()}).optional(),tags:z.record(z.string(),z.string()).default({})});
 
 function distance(lat:number,lon:number,a:number,b:number){
   const r=Math.PI/180,x=(a-lat)*r,y=(b-lon)*r;
@@ -17,17 +15,15 @@ export async function nearby(location:Location|null):Promise<Context>{
     const {data}=await db().from('reports').select('id,category,council').gte('lat',location.lat-.002).lte('lat',location.lat+.002).gte('lon',location.lon-.003).lte('lon',location.lon+.003).limit(6);
     base.ownershipEvidence=(data??[]).flatMap(row=>typeof row.council==='string'&&row.council.trim()?[{reportId:String(row.id),category:String(row.category),reportedRecipient:row.council}]:[]);
   }catch{/* Historical recipients are optional evidence, never verified ownership. */}
-  const query=`[out:json][timeout:8];(nwr(around:300,${location.lat},${location.lon})[amenity~"^(school|university|college)$"];nwr(around:300,${location.lat},${location.lon})[highway=bus_stop];nwr(around:300,${location.lat},${location.lon})[railway=station];);out center tags;`;
+  // Nearby places from the harvested `pois` table (OpenStreetMap, loaded by the harvest scripts):
+  // a local query instead of a live Overpass call, so assessments stay fast and reliable.
   try{
-    const json=await externalJson('https://overpass-api.de/api/interpreter',{method:'POST',headers:{'content-type':'application/x-www-form-urlencoded'},body:new URLSearchParams({data:query}).toString()},10000);
-    const parsed=z.object({elements:z.array(osmElement)}).parse(json);
-    const places=parsed.elements.flatMap(e=>{
-      const lat=e.lat??e.center?.lat,lon=e.lon??e.center?.lon;
-      if(lat===undefined||lon===undefined)return [];
-      const type=e.tags.amenity??(e.tags.highway==='bus_stop'?'Bus stop':'Station');
-      return [{name:e.tags.name??type,type,distance:distance(location.lat,location.lon,lat,lon),osmId:`${e.type}/${e.id}`}];
-    }).sort((a,b)=>a.distance-b.distance).slice(0,20);
-    return {...base,status:'available',places};
+    const {data,error}=await db().from('pois').select('osm_type,osm_id,category,name,lat,lon')
+      .gte('lat',location.lat-.0036).lte('lat',location.lat+.0036).gte('lon',location.lon-.0058).lte('lon',location.lon+.0058).limit(50);
+    if(error)throw error;
+    const places=(data??[]).flatMap(p=>typeof p.lat==='number'&&typeof p.lon==='number'?[{name:p.name??String(p.category).replace(/_/g,' '),type:String(p.category).replace(/_/g,' '),distance:distance(location.lat,location.lon,p.lat,p.lon),osmId:`${p.osm_type}/${p.osm_id}`}]:[])
+      .filter(p=>p.distance<=400).sort((a,b)=>a.distance-b.distance).slice(0,20);
+    return {...base,source:'OpenStreetMap points of interest (harvested)',status:'available',places};
   }catch{return {...base,status:'unavailable'};}
 }
 

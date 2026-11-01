@@ -41,6 +41,8 @@ const todo = (data as Row[])
   .map((r) => ({ r, path: r.report_photos?.find((p) => p.storage_path && /\.(jpe?g|png|webp)$/i.test(p.storage_path))?.storage_path }))
   .filter((x): x is { r: Row; path: string } => Boolean(x.path) && !already.has(String(x.r.id)))
   .slice(0, LIMIT);
+// REVERSE=1 works from the other end, so a second runner can share the load (jobs are locked per row).
+if (process.env.REVERSE) todo.reverse();
 
 console.log(`backfill: ${todo.length} to assess (${already.size} already done), ${CONCURRENCY} at a time`);
 

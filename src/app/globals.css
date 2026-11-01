@@ -178,7 +178,7 @@ body {
 .fork-draw { stroke-dasharray: 60; animation: fork-draw 600ms ease-out both; }
 
 /* ---------- Dither image loader ---------- */
-@property --dot { syntax: "<percentage>"; inherits: false; initial-value: 80%; }
+@property --dot { syntax: "<percentage>"; inherits: false; initial-value: 120%; }
 .dither-wrap { position: relative; overflow: hidden; background: var(--hackney-tint); }
 .dither-wrap::before {
   content: ""; position: absolute; inset: 0; z-index: 1; pointer-events: none;
@@ -198,5 +198,5 @@ body {
   -webkit-mask-size: 7px 7px; mask-size: 7px 7px;
   animation: dither-resolve 950ms cubic-bezier(.3,.7,.2,1) both;
 }
-/* Dots grow from nothing until they overlap into the full picture. */
-@keyframes dither-resolve { from { --dot: 0%; } to { --dot: 80%; } }
+/* Dots grow from nothing until they overlap into the full picture (past 100% so the cell corners close). */
+@keyframes dither-resolve { from { --dot: 0%; } to { --dot: 120%; } }
