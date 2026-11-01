@@ -27,9 +27,8 @@ function Mark(){return <span className="mark" aria-hidden="true"><svg viewBox="0
 function Arrow(){return <span aria-hidden="true">↗</span>;}
 
 export default function StreetReports(){
-  const [mode,setMode]=useState<'resident'|'council'>('resident');
-  return <div className="app"><header className="header"><Link href="/street-report" className="brand"><Mark/><span><strong>One Hackney</strong><small>STREET REPORTS</small></span></Link><nav aria-label="Workspace"><button className={mode==='resident'?'nav-active':''} onClick={()=>setMode('resident')}>Report an issue</button><button className={mode==='council'?'nav-active':''} onClick={()=>setMode('council')}>Council workspace <Arrow/></button></nav></header>
-    {mode==='resident'?<Resident/>:<Council/>}
+  return <div className="app"><header className="header"><Link href="/street-report" className="brand"><Mark/><span><strong>One Hackney</strong><small>STREET REPORTS</small></span></Link><nav aria-label="Workspace"><Link href="/street-report" className="nav-active">Report an issue</Link><Link href="/dashboard">Council workspace <Arrow/></Link></nav></header>
+    <Resident/>
     <footer><span>Built for the Hackney hackathon · an independent prototype.</span><Link href="/street-report/pipeline">How reports are assessed <Arrow/></Link><a href="https://www.hackney.gov.uk/" target="_blank" rel="noreferrer">Official council website <Arrow/></a></footer>
   </div>;
 }
@@ -105,7 +104,8 @@ function AssessmentView({result}:{result:Assessment}){
   </article>;
 }
 
-function Council(){
+// Live evidence review remains protected; the demo workspace opens /dashboard.
+export function Council(){
   const [password,setPassword]=useState(''),[signedIn,setSignedIn]=useState(false),[items,setItems]=useState<Assessment[]>([]),[selected,setSelected]=useState<Assessment|null>(null),[filter,setFilter]=useState('All reports'),[busy,setBusy]=useState(false),[error,setError]=useState(''),[source,setSource]=useState(0);
   async function load(){setBusy(true);setError('');try{const raw=await readResponse(await fetch('/api/street-brain/queue',{cache:'no-store'}));const data=z.object({assessments:z.array(assessmentSchema),source:z.object({reports:z.number()})}).parse(raw);setItems(data.assessments);setSource(data.source.reports);setSignedIn(true);}catch(e){setError(message(e));}finally{setBusy(false);}}
   async function login(e:FormEvent){e.preventDefault();setError('');try{await readResponse(await fetch('/api/street-brain/session',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({password})}));setPassword('');await load();}catch(cause){setError(message(cause));}}

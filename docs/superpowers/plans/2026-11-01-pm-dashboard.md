@@ -47,4 +47,8 @@
 
 - Final verification: 22 tests pass (7 dashboard, 7 Street Brain, 8 map); full lint passes. Production build exits 0 with temporary build-only AI placeholders; existing Supabase fallback warning remains. Final production browser console: no errors/warnings. Production mobile checked at 391×844 without horizontal overflow.
 - Final comparison: viewed accepted concept and latest desktop/mobile screenshots directly; layout, palette, typography, spacing, chart treatment and control styles verified. No remaining material visual defects; intentional differences listed above.
-- Local preview: http://127.0.0.1:3000/dashboard. Evidence saved outside repo at /tmp/hackney-dashboard-desktop.png and /tmp/hackney-dashboard-mobile.png. Changes left uncommitted on feat/pm-dashboard; no deployment or push performed.
+- Local preview: http://127.0.0.1:3000/dashboard. Evidence saved outside repo at /tmp/hackney-dashboard-desktop.png and /tmp/hackney-dashboard-mobile.png. Dashboard prepared on feat/pm-dashboard for integration into main.
+
+## Council workspace integration
+
+The `/street-report` Council workspace entry opens `/dashboard` directly with no sign-in prompt. Dashboard branding links back to resident reporting. The legacy live-evidence reviewer remains available as a named component export; protected queue/evaluation/session APIs are unchanged. This public demo does not expose uploaded report photos or assessment records.
