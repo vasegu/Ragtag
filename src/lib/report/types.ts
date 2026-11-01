@@ -51,6 +51,16 @@ export type Report = LatLng & {
   /** Number of neighbours who confirmed it's still there. */
   confirmations: number;
   photo_url?: string;
+  /** Timeline facts from the FixMyStreet harvest, when the report came from there. */
+  fms?: {
+    rawCategory: string | null;
+    state: string | null;
+    council: string | null;
+    firstResponseAt: string | null;
+    firstActionAt: string | null;
+    resolvedAt: string | null;
+    councilUpdate: { body: string | null; at: string; stateChange: string | null } | null;
+  };
 };
 
 export const CATEGORY_META: Record<Category, { label: string; colour: string; owner: string; deadline: string }> = {

@@ -62,6 +62,7 @@ export function ReportApp() {
   const [submitting, setSubmitting] = useState(false);
   const [queue, setQueue] = useState<QueueInfo | null>(null);
   const [reference, setReference] = useState("");
+  const [submitted, setSubmitted] = useState<Report | null>(null);
   const [reward, setReward] = useState<Reward | null>(null);
   const [verifying, setVerifying] = useState<Report | null>(null);
   const [streakOpen, setStreakOpen] = useState(false);
@@ -159,6 +160,7 @@ export function ReportApp() {
     const q = (await res.json()) as QueueInfo;
     setReports((r) => [...r, report]);
     setDropped({ ...location, category: classification.category });
+    setSubmitted(report);
     setQueue(q);
     setReference(`HN-${String(Date.now()).slice(-5)}`);
     setReward(act({ type: "report", id, category: classification.category }));
@@ -312,15 +314,15 @@ export function ReportApp() {
                 onBack={() => setScreen("capture")}
               />
             )}
-            {screen === "tracker" && queue && classification && (
-              <TrackerScreen queue={queue} classification={classification} mascot={mascot} reference={reference} onDone={home} />
+            {screen === "tracker" && queue && classification && submitted && (
+              <TrackerScreen queue={queue} classification={classification} report={submitted} all={reports} mascot={mascot} reference={reference} onDone={home} />
             )}
             {screen === "badges" && <BadgesScreen player={player} onBack={home} />}
             {screen === "board" && <BoardScreen player={player} onBack={home} />}
           </div>
 
           {streakOpen && <StreakSheet player={player} onClose={() => setStreakOpen(false)} />}
-          {verifying && <VerifySheet report={verifying} onAnswer={(a) => answerQuest(verifying, a)} onClose={() => setVerifying(null)} />}
+          {verifying && <VerifySheet report={verifying} all={reports} onAnswer={(a) => answerQuest(verifying, a)} onClose={() => setVerifying(null)} />}
           {reward && <RewardOverlay reward={reward} player={player} mascot={mascot} onClose={() => setReward(null)} />}
         </PhoneFrame>
       </div>

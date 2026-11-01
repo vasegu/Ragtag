@@ -2,9 +2,11 @@
 
 import { useEffect, useState } from "react";
 import { BADGES, type BadgeId, type Player, RING_GOALS, type Reward, WARDS, levelFor } from "@/lib/report/game";
-import { CATEGORY_META, type Classification, type QueueInfo, type Report, STAGES } from "@/lib/report/types";
+import { CATEGORY_META, type Classification, type QueueInfo, type Report } from "@/lib/report/types";
+import { buildTrack } from "@/lib/report/track";
 import { Mascot, type MascotKind, type MascotMood } from "./Mascot";
-import { BadgeImage, Card, CategoryIcon, Flame, Label, Rings, formatRange } from "./ui";
+import { Timeline } from "./Timeline";
+import { BadgeImage, Card, CategoryIcon, Flame, Label, Rings } from "./ui";
 
 const DEMO_PHOTOS = ["pothole", "flytip", "streetlight", "graffiti"] as const;
 
@@ -321,28 +323,24 @@ export function ScanScreen({
 
 /* --------------------------------- Tracker -------------------------------- */
 
-const STAGE_LABEL: Record<(typeof STAGES)[number], string> = {
-  reported: "Reported",
-  recognised: "Recognised",
-  routed: "With the team",
-  scheduled: "Scheduled",
-  fixed: "Fixed",
-};
-
 export function TrackerScreen({
   queue,
   classification,
+  report,
+  all,
   mascot,
   reference,
   onDone,
 }: {
   queue: QueueInfo;
   classification: Classification;
+  report: Report;
+  all: Report[];
   mascot: MascotKind;
   reference: string;
   onDone: () => void;
 }) {
-  const stageIndex = STAGES.indexOf(queue.stage);
+  const track = buildTrack(report, all, { classification });
   const maxPoints = Math.max(...queue.breakdown.map((b) => b.points), 1);
 
   return (
@@ -355,43 +353,8 @@ export function TrackerScreen({
       </div>
 
       <Card className="relative overflow-hidden">
-        <Label>Estimated fix</Label>
-        <p className="mt-1 text-[38px] font-semibold leading-none tracking-[-0.035em]">{formatRange(queue.eta_from, queue.eta_to)}</p>
-        <p className="mt-2 text-[13.5px] text-muted">
-          Based on {queue.total_open} open reports and crew capacity. An estimate, not a promise.
-        </p>
-        <Mascot kind={mascot} mood="idle" className="absolute -right-4 -top-2 h-[110px] w-[110px]" />
-
-        <div className="mt-5 flex gap-1.5">
-          {STAGES.map((s, i) => (
-            <div key={s} className="flex-1">
-              <div className={`h-1.5 overflow-hidden rounded-full ${i <= stageIndex ? "bg-hackney-bright" : "bg-line"}`}>
-                {i === stageIndex && <div className="stage-pulse h-full w-full" />}
-              </div>
-            </div>
-          ))}
-        </div>
-        <div className="mt-2 flex justify-between text-[11px] text-muted">
-          {STAGES.map((s, i) => (
-            <span key={s} className={i === stageIndex ? "font-semibold text-ink" : ""}>
-              {STAGE_LABEL[s]}
-            </span>
-          ))}
-        </div>
-      </Card>
-
-      <Card className="flex items-center gap-4">
-        <div className="grid h-16 w-16 shrink-0 place-items-center rounded-[20px] bg-ink text-white">
-          <span className="text-[24px] font-semibold tabular-nums tracking-[-0.03em]">{queue.position}</span>
-        </div>
-        <div className="flex-1">
-          <p className="text-[16px] font-semibold leading-snug">
-            {ordinal(queue.position)} of {queue.total_open} in the queue
-          </p>
-          <p className="text-[13px] text-muted">
-            {queue.owner} · {CATEGORY_META[classification.category].deadline}
-          </p>
-        </div>
+        <Mascot kind={mascot} mood="idle" className="pointer-events-none absolute -right-5 -top-4 h-[96px] w-[96px]" />
+        <Timeline track={track} />
       </Card>
 
       <Card>
@@ -575,39 +538,48 @@ function Confetti() {
 
 /* -------------------------------- Verify sheet ------------------------------ */
 
-export function VerifySheet({ report, onAnswer, onClose }: { report: Report; onAnswer: (a: "there" | "fixed") => void; onClose: () => void }) {
+export function VerifySheet({
+  report,
+  all,
+  onAnswer,
+  onClose,
+}: {
+  report: Report;
+  all: Report[];
+  onAnswer: (a: "there" | "fixed") => void;
+  onClose: () => void;
+}) {
+  const track = buildTrack(report, all);
   return (
     <div className="absolute inset-0 z-40 flex items-end bg-ink/40" onClick={onClose}>
-      <div className="slide-up w-full rounded-t-[32px] bg-card p-5 pb-8" onClick={(e) => e.stopPropagation()}>
+      <div className="slide-up max-h-[88%] w-full overflow-y-auto rounded-t-[32px] bg-card p-5 pb-8" onClick={(e) => e.stopPropagation()}>
         <div className="mx-auto mb-4 h-1.5 w-10 rounded-full bg-line" />
         <div className="flex items-center gap-3">
           <CategoryIcon category={report.category} size={52} />
           <div className="min-w-0">
             <Label>
-              {CATEGORY_META[report.category].label} ·{" "}
-              {report.status === "fixed" ? "Fixed" : report.status === "scheduled" ? "Scheduled" : "Open · +20 XP to check"}
+              {CATEGORY_META[report.category].label} · {track.owner.kind === "hackney" ? track.owner.name : track.owner.name}
             </Label>
             <p className="truncate text-[17px] font-semibold">{report.title}</p>
-            <p className="text-[12.5px] text-muted">Reported {daysAgo(report.created_at)} · {report.confirmations} neighbours confirmed</p>
           </div>
         </div>
         {report.photo_url && (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={report.photo_url} alt="Photo from the original report" className="mt-4 h-40 w-full rounded-[18px] object-cover" />
+          <img src={report.photo_url} alt="Photo from the original report" className="mt-4 h-36 w-full rounded-[18px] object-cover" />
         )}
+
+        <div className="mt-4">
+          <Timeline track={track} compact />
+        </div>
+
         {report.status === "fixed" ? (
-          <>
-            <p className="mt-4 text-[15px]">
-              {CATEGORY_META[report.category].owner} marked this fixed. Thanks to everyone who reported it.
-            </p>
-            <button onClick={onClose} className="mt-4 h-12 w-full rounded-full bg-hackney-tint text-[15px] font-semibold text-hackney">
-              Close
-            </button>
-          </>
+          <button onClick={onClose} className="mt-2 h-12 w-full rounded-full bg-hackney-tint text-[15px] font-semibold text-hackney">
+            Close
+          </button>
         ) : (
           <>
-            <p className="mt-4 text-[15px]">Is it still there? Your answer moves it up the queue, or closes it.</p>
-            <div className="mt-4 grid grid-cols-2 gap-2">
+            <p className="mt-2 text-[14px]">Seen it too? Confirming groups your sighting with this report. +20 XP</p>
+            <div className="mt-3 grid grid-cols-2 gap-2">
               <button onClick={() => onAnswer("there")} className="h-12 rounded-full bg-ink text-[15px] font-semibold text-white">
                 Still there
               </button>
@@ -687,13 +659,3 @@ function TopNav({ title, onBack }: { title: string; onBack: () => void }) {
   );
 }
 
-function ordinal(n: number) {
-  const s = ["th", "st", "nd", "rd"];
-  const v = n % 100;
-  return n + (s[(v - 20) % 10] || s[v] || s[0]);
-}
-
-function daysAgo(iso: string) {
-  const d = Math.floor((Date.now() - new Date(iso).getTime()) / 86_400_000);
-  return d === 0 ? "today" : d === 1 ? "yesterday" : `${d} days ago`;
-}
