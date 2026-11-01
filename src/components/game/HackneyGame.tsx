@@ -1,9 +1,9 @@
 "use client";
 
-import { Component, memo, useEffect, useMemo, useState, type ReactNode } from "react";
+import { Component, memo, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { Canvas } from "@react-three/fiber";
 import { Html, Stars } from "@react-three/drei";
-import { AdditiveBlending, BackSide, BufferAttribute, BufferGeometry, CanvasTexture, DataTexture, MeshToonMaterial, NearestFilter, RedFormat, SRGBColorSpace } from "three";
+import { AdditiveBlending, BackSide, BufferAttribute, BufferGeometry, CanvasTexture, Color, CylinderGeometry, DataTexture, Euler, IcosahedronGeometry, type InstancedMesh, LinearFilter, Matrix4, MeshToonMaterial, Quaternion, RedFormat, SRGBColorSpace, Vector3 } from "three";
 import { CameraRig } from "./CameraRig";
 import { ReportBeacons } from "./ReportBeacons";
 import { loadGameMap, type GameMapData, type GameReport } from "./map-data";
@@ -23,8 +23,9 @@ export type HackneyGameProps = {
 };
 const NO_REPORTS: GameReport[] = [];
 
-function geometry(attributes: MeshData) {
+function geometry(attributes: MeshData & { detail?: Float32Array }) {
   const g = new BufferGeometry();
+  if (attributes.detail) g.setAttribute("detail", new BufferAttribute(attributes.detail, 3));
   g.setAttribute("position", new BufferAttribute(attributes.position, 3));
   g.setAttribute("normal", new BufferAttribute(attributes.normal, 3));
   g.setAttribute("color", new BufferAttribute(attributes.color, 3));
@@ -71,42 +72,102 @@ export type GameTheme = "night" | "day";
 
 const PALETTE = {
   night: {
-    skyLow: "0.075,0.105,0.18", skyHigh: "0.012,0.023,0.065", fog: "#111c31", ground: "#111b2c", bg: "#080f20",
-    hemi: ["#a8b9ed", "#263c50", 2.1] as [string, string, number], sun: ["#abbcff", 2.1] as [string, number], rim: ["#66bba9", 0.5] as [string, number],
-    windows: 1, outline: "#111728", stars: true, label: "#a4e4c7", labelShadow: "#001e18",
+    skyLow: "0.075,0.105,0.18", skyHigh: "0.012,0.023,0.065", fog: "#111c31", ground: "#141c2a", bg: "#080f20",
+    hemi: ["#b4bde6", "#3a3346", 2.0] as [string, string, number], sun: ["#b3c1ff", 1.7] as [string, number], rim: ["#e0a878", 0.45] as [string, number],
+    road: "#3a475c", roadOpacity: 0.7, park: "#1f4d3d",
+    windows: 1, outline: "#0d1220", stars: true, label: "#a4e4c7", labelShadow: "#001e18",
   },
   day: {
-    skyLow: "0.86,0.92,0.97", skyHigh: "0.47,0.69,0.92", fog: "#cfe0ee", ground: "#c9d3c4", bg: "#cfe0ee",
-    hemi: ["#ffffff", "#8fa39a", 3.2] as [string, string, number], sun: ["#fff1d6", 3.4] as [string, number], rim: ["#bfe6ff", 1.1] as [string, number],
-    windows: 0, outline: "#3b4a63", stars: false, label: "#00664f", labelShadow: "#ffffff",
+    skyLow: "0.86,0.92,0.97", skyHigh: "0.47,0.69,0.92", fog: "#d8e2ea", ground: "#b9b4a7", bg: "#cfe0ee",
+    hemi: ["#fffaf0", "#7d776c", 1.15] as [string, string, number], sun: ["#ffe9c9", 1.9] as [string, number], rim: ["#bfe6ff", 0.6] as [string, number],
+    road: "#6f6e6b", roadOpacity: 0.85, park: "#86b86c",
+    windows: 0, outline: "#4a3a33", stars: false, label: "#00664f", labelShadow: "#ffffff",
   },
 };
+
+const TREE_STRIDE = 5;
+/** Street and park trees: two instanced draws (canopies, trunks) for the whole borough. */
+function Trees({ trees, canopy, trunk, material }: { trees: Float32Array; canopy: BufferGeometry; trunk: BufferGeometry; material: MeshToonMaterial }) {
+  const canopies = useRef<InstancedMesh>(null), trunks = useRef<InstancedMesh>(null);
+  const count = trees.length / TREE_STRIDE;
+  useLayoutEffect(() => {
+    if (!canopies.current || !trunks.current) return;
+    const matrix = new Matrix4(), rotation = new Quaternion(), euler = new Euler(), position = new Vector3(), scale = new Vector3(), color = new Color(), bark = new Color("#5b4636");
+    for (let i = 0; i < count; i++) {
+      const [x, z, size, tint, park] = trees.subarray(i * TREE_STRIDE, i * TREE_STRIDE + TREE_STRIDE);
+      const s = size * (park ? 1.15 : 1);
+      rotation.setFromEuler(euler.set(0, tint * Math.PI * 2, 0));
+      position.set(x, 9 * s, z);
+      scale.set(6 * s, 6.8 * s, 6 * s);
+      canopies.current.setMatrixAt(i, matrix.compose(position, rotation, scale));
+      canopies.current.setColorAt(i, color.setHSL(0.29 + tint * 0.06, 0.5 + tint * 0.15, 0.2 + tint * 0.1));
+      position.set(x, 2.6 * s, z);
+      scale.set(0.7 * s, 5.2 * s, 0.7 * s);
+      trunks.current.setMatrixAt(i, matrix.compose(position, rotation, scale));
+      trunks.current.setColorAt(i, bark);
+    }
+    for (const mesh of [canopies.current, trunks.current]) {
+      mesh.instanceMatrix.needsUpdate = true;
+      if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
+      mesh.computeBoundingSphere();
+    }
+  }, [trees, count]);
+  if (!count) return null;
+  return <>
+    <instancedMesh key={`canopy-${count}`} ref={canopies} args={[canopy, material, count]} />
+    <instancedMesh key={`trunk-${count}`} ref={trunks} args={[trunk, material, count]} />
+  </>;
+}
 
 const City = memo(function City({ built, data, theme }: { built: SceneGeometry; data: GameMapData; theme: GameTheme }) {
   const palette = PALETTE[theme];
   const assets = useMemo(() => {
-    const gradient = new DataTexture(new Uint8Array([75, 155, 255]), 3, 1, RedFormat);
-    gradient.minFilter = gradient.magFilter = NearestFilter;
+    // Four soft steps, linearly blended: cel-shaded but without hard bands.
+    const gradient = new DataTexture(new Uint8Array([95, 150, 205, 255]), 4, 1, RedFormat);
+    gradient.minFilter = gradient.magFilter = LinearFilter;
     gradient.generateMipmaps = false;
     gradient.needsUpdate = true;
     const toon = new MeshToonMaterial({ vertexColors: true, gradientMap: gradient });
-    // Sparse, deterministic window light in world coordinates. No per-building materials.
+    // Brick detailing in the shader: sash windows, a stucco cornice, a darker plinth and
+    // light catching the corners (reads as rounded edges). Sparse warm window light at night.
     toon.userData.windows = { value: 1 };
     toon.onBeforeCompile = (shader) => {
       shader.uniforms.uWindows = toon.userData.windows;
-      shader.vertexShader = shader.vertexShader.replace("#include <common>", "#include <common>\nvarying vec3 vCityPosition;\nvarying vec3 vCityNormal;")
-        .replace("#include <begin_vertex>", "#include <begin_vertex>\nvCityPosition = position;\nvCityNormal = normal;");
-      shader.fragmentShader = shader.fragmentShader.replace("#include <common>", "#include <common>\nvarying vec3 vCityPosition;\nvarying vec3 vCityNormal;\nuniform float uWindows;")
-        .replace("#include <emissivemap_fragment>", `#include <emissivemap_fragment>
-          vec2 wall = vec2(vCityPosition.x + vCityPosition.z, vCityPosition.y);
+      shader.vertexShader = shader.vertexShader.replace("#include <common>", "#include <common>\nattribute vec3 detail;\nvarying vec3 vCityPosition;\nvarying vec3 vCityNormal;\nvarying vec3 vDetail;")
+        .replace("#include <begin_vertex>", "#include <begin_vertex>\nvCityPosition = position;\nvCityNormal = normal;\nvDetail = detail;");
+      shader.fragmentShader = shader.fragmentShader.replace("#include <common>", "#include <common>\nvarying vec3 vCityPosition;\nvarying vec3 vCityNormal;\nvarying vec3 vDetail;\nuniform float uWindows;")
+        .replace("#include <color_fragment>", `#include <color_fragment>
+          float wallMask = 1.0 - abs(vCityNormal.y);
+          float y = vCityPosition.y, top = vDetail.z;
+          vec2 wall = vec2(vDetail.x, y);
           vec2 cell = floor(wall / vec2(4.6, 5.0));
           vec2 pane = abs(fract(wall / vec2(4.6, 5.0)) - 0.5);
-          float occupied = step(0.76, fract(sin(dot(cell, vec2(12.9898, 78.233))) * 43758.5453));
-          float windowMask = (1.0 - step(0.16, pane.x)) * (1.0 - step(0.22, pane.y));
-          float wallMask = 1.0 - abs(vCityNormal.y);
-          totalEmissiveRadiance += vec3(0.52, 0.34, 0.13) * occupied * windowMask * wallMask * step(4.0, vCityPosition.y) * uWindows;`);
+          float windowMask = (1.0 - step(0.16, pane.x)) * (1.0 - step(0.22, pane.y)) * step(4.0, y) * step(y, top - 2.2) * step(2.5, vDetail.y) * wallMask;
+          // Fade the window grid where it gets smaller than a pixel to avoid shimmer.
+          vec2 fw = fwidth(wall / vec2(4.6, 5.0));
+          float near = 1.0 - smoothstep(0.18, 0.45, max(fw.x, fw.y));
+          diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.13, 0.15, 0.19), windowMask * near * 0.8);
+          float cornice = (1.0 - smoothstep(0.5, 1.0, top - y)) * wallMask;
+          diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.92, 0.89, 0.82), cornice * 0.75);
+          diffuseColor.rgb *= mix(0.68, 1.0, smoothstep(0.0, 6.0, y) * wallMask + abs(vCityNormal.y));
+          float corner = 1.0 - smoothstep(0.0, 1.6, min(vDetail.x, vDetail.y - vDetail.x));
+          diffuseColor.rgb *= 1.0 + corner * wallMask * 0.18;`)
+        .replace("#include <emissivemap_fragment>", `#include <emissivemap_fragment>
+          float occupied = step(0.72, fract(sin(dot(cell + vec2(vDetail.y, top), vec2(12.9898, 78.233))) * 43758.5453));
+          totalEmissiveRadiance += vec3(0.62, 0.40, 0.15) * occupied * windowMask * uWindows;`);
     };
-    return { buildings: geometry(built.buildings), roads: geometry(built.roads), parks: geometry(built.parks), water: geometry(built.water), fields: geometry(built.fields), outlines: lines(built.outlines), fieldBorder: lines(built.fieldBorder), toon, gradient, glow: glowTexture() };
+    // Trees: one rounded, slightly lumpy canopy and one trunk, each a single instanced draw.
+    const canopy = new IcosahedronGeometry(1, 1);
+    const p = canopy.attributes.position;
+    for (let i = 0; i < p.count; i++) {
+      const v = new Vector3().fromBufferAttribute(p, i);
+      const n = Math.sin(v.x * 12.9898 + v.y * 78.233 + v.z * 37.719) * 43758.5453;
+      v.multiplyScalar(0.9 + (n - Math.floor(n)) * 0.2);
+      p.setXYZ(i, v.x, v.y, v.z);
+    }
+    const trunk = new CylinderGeometry(0.7, 1, 1, 5, 1, true);
+    const treeToon = new MeshToonMaterial({ gradientMap: gradient });
+    return { buildings: geometry(built.buildings), roads: geometry(built.roads), parks: geometry(built.parks), water: geometry(built.water), fields: geometry(built.fields), outlines: lines(built.outlines), fieldBorder: lines(built.fieldBorder), toon, gradient, glow: glowTexture(), canopy, trunk, treeToon };
   }, [built]);
 
   useEffect(() => () => { Object.values(assets).forEach((asset) => asset.dispose()); }, [assets]);
@@ -124,8 +185,8 @@ const City = memo(function City({ built, data, theme }: { built: SceneGeometry; 
       <planeGeometry args={[32000, 32000]} />
       <meshStandardMaterial color={palette.ground} roughness={1} />
     </mesh>
-    <mesh geometry={assets.parks}><meshStandardMaterial vertexColors roughness={1} emissive="#00664f" emissiveIntensity={0.18} /></mesh>
-    <mesh geometry={assets.roads}><meshBasicMaterial vertexColors transparent opacity={0.62} /></mesh>
+    <mesh geometry={assets.parks}><meshStandardMaterial vertexColors color={palette.park} roughness={1} emissive={palette.park} emissiveIntensity={0.15} /></mesh>
+    <mesh geometry={assets.roads}><meshBasicMaterial vertexColors color={palette.road} transparent opacity={palette.roadOpacity} /></mesh>
     <mesh geometry={assets.water}><meshPhysicalMaterial vertexColors metalness={0.55} roughness={0.2} clearcoat={0.8} emissive="#07353b" emissiveIntensity={0.32} /></mesh>
     <mesh geometry={assets.fields}><meshStandardMaterial vertexColors emissive="#00b37f" emissiveIntensity={0.28} roughness={0.9} /></mesh>
     <mesh position={[fieldsCenter[0], 6, fieldsCenter[1]]} rotation={[-Math.PI / 2, 0, 0]}>
@@ -134,7 +195,8 @@ const City = memo(function City({ built, data, theme }: { built: SceneGeometry; 
     </mesh>
     <lineSegments geometry={assets.fieldBorder}><lineBasicMaterial color="#50d9a5" transparent opacity={0.65} /></lineSegments>
     <mesh geometry={assets.buildings} material={assets.toon} />
-    <lineSegments geometry={assets.outlines}><lineBasicMaterial color={palette.outline} transparent opacity={theme === "day" ? 0.35 : 0.55} /></lineSegments>
+    <lineSegments geometry={assets.outlines}><lineBasicMaterial color={palette.outline} transparent opacity={theme === "day" ? 0.22 : 0.4} /></lineSegments>
+    <Trees trees={built.trees} canopy={assets.canopy} trunk={assets.trunk} material={assets.treeToon} />
     <Html position={[fieldsCenter[0], 9, fieldsCenter[1]]} center style={{ pointerEvents: "none" }} zIndexRange={[2, 0]}>
       <div style={{ color: palette.label, fontFamily: "var(--font-geist-mono), monospace", fontSize: 10, letterSpacing: "0.2em", whiteSpace: "nowrap", textShadow: `0 2px 8px ${palette.labelShadow}`, transform: "translateY(-10px)" }}>LONDON FIELDS</div>
     </Html>

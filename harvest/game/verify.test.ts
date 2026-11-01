@@ -92,3 +92,13 @@ test("downloaded map is complete, finite, half-metre quantised and under 6 MB", 
     for (const n of coordinates) { assert.ok(Number.isFinite(n)); assert.equal(n * 2, Math.round(n * 2)); }
   }
 });
+
+test("trees are deterministic, finite and planted on the real map", () => {
+  const data = JSON.parse(readFileSync(new URL("../../public/game/hackney.json", import.meta.url), "utf8")) as GameMapData;
+  const { trees, buildings } = buildSceneGeometry(data);
+  assert.equal(trees.length % 5, 0);
+  assert.ok(trees.length / 5 > 2000, "expected thousands of street and park trees");
+  assert.deepEqual(trees, buildSceneGeometry(data).trees);
+  for (const n of trees) assert.ok(Number.isFinite(n));
+  assert.equal(buildings.detail.length, buildings.position.length);
+});
