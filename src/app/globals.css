@@ -66,3 +66,79 @@ body {
   font-weight: 600;
   letter-spacing: -0.01em;
 }
+
+/* ---------- Report module motion ---------- */
+@keyframes pop-in {
+  from { opacity: 0; transform: translateY(8px) scale(0.96); }
+  to { opacity: 1; transform: none; }
+}
+.pop-in { animation: pop-in 420ms cubic-bezier(.2,.9,.25,1.2) both; }
+
+@keyframes slide-up {
+  from { transform: translateY(100%); }
+  to { transform: none; }
+}
+.slide-up { animation: slide-up 380ms cubic-bezier(.2,.8,.2,1) both; }
+
+@keyframes grow-x {
+  from { transform: scaleX(0); }
+  to { transform: scaleX(1); }
+}
+.grow-x { transform-origin: left; animation: grow-x 900ms cubic-bezier(.2,.8,.2,1) both; }
+
+/* Photo scan: a lime sweep over a faint grid. */
+@keyframes sweep {
+  0% { top: -25%; }
+  100% { top: 100%; }
+}
+.scan-sweep {
+  background: linear-gradient(to bottom, transparent, rgb(164 214 94 / 0.0) 10%, rgb(164 214 94 / 0.55) 90%, rgb(164 214 94 / 0.95));
+  box-shadow: 0 6px 24px rgb(164 214 94 / 0.7);
+  animation: sweep 1.6s cubic-bezier(.45,0,.55,1) infinite;
+}
+.scan-grid {
+  background-image: linear-gradient(rgb(164 214 94 / 0.14) 1px, transparent 1px), linear-gradient(90deg, rgb(164 214 94 / 0.14) 1px, transparent 1px);
+  background-size: 28px 28px;
+}
+
+@keyframes stage-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.35; }
+}
+.stage-pulse { background: var(--hackney-bright); animation: stage-pulse 1.4s ease-in-out infinite; }
+
+@keyframes confetti {
+  0% { transform: translateY(0) rotate(0); opacity: 1; }
+  100% { transform: translateY(105vh) rotate(720deg); opacity: 0.8; }
+}
+.confetti { animation: confetti 1.8s cubic-bezier(.2,.6,.4,1) forwards; }
+
+/* Badge unlock: a light sweep across the medal. */
+@keyframes shine {
+  0% { transform: translateX(-120%) rotate(20deg); }
+  60%, 100% { transform: translateX(220%) rotate(20deg); }
+}
+.badge-shine::after {
+  content: "";
+  position: absolute;
+  inset: -20% auto -20% 0;
+  width: 40%;
+  background: linear-gradient(90deg, transparent, rgb(255 255 255 / 0.85), transparent);
+  animation: shine 1.8s ease-in-out 0.4s infinite;
+}
+
+/* Map beacon for a just-sent report. */
+.beacon { position: relative; width: 22px; height: 22px; }
+.beacon-core {
+  position: absolute; inset: 4px; border-radius: 9999px; background: var(--beacon);
+  box-shadow: 0 0 0 3px #fff, 0 0 24px 6px var(--beacon);
+}
+@keyframes beacon {
+  0% { transform: scale(0.6); opacity: 0.9; }
+  100% { transform: scale(4.2); opacity: 0; }
+}
+.beacon-ring {
+  position: absolute; inset: 0; border-radius: 9999px; border: 3px solid var(--beacon);
+  animation: beacon 1.8s cubic-bezier(.2,.6,.3,1) infinite;
+}
+.beacon-ring.delay { animation-delay: 0.9s; }

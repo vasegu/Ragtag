@@ -63,3 +63,42 @@ Run locally with `npm run ingest:<step>`. Each step caches output under `data/` 
 - `npm run build` passes and `npm run lint` is clean.
 - `npm run ingest:eval` shows our hit rate beats Hackney's site search.
 - Every answer cites a source URL that exists in `documents`.
+
+## Report module contracts
+
+The Report module (`/report`, owner Vasco) is built against mocks so it works before these land.
+Types live in `src/lib/report/types.ts`.
+
+### Classifier (Santiago)
+
+`POST /api/classify` with `multipart/form-data`: `photo` (image file), `lat`, `lng`.
+Returns `Classification`:
+
+```json
+{ "category": "pothole", "severity": 4, "safety": 0.7, "exposure": 0.6, "confidence": 0.91,
+  "labels": ["Deeper than 40mm", "In a cycle lane", "Near a bus stop"] }
+```
+
+`category` is one of `pothole | flytip | streetlight | graffiti | pavement`. If `CLASSIFIER_URL` is set,
+the route forwards the same form data there and expects this JSON back. Otherwise it falls back to
+an OpenAI vision call (via the AI gateway) that returns the same shape.
+
+### Queue and fix date (Santiago)
+
+`GET /api/queue?id=<report id>` (or `POST` with a new report) returns `QueueInfo`:
+
+```json
+{ "position": 14, "total_open": 212, "eta_from": "2026-11-18", "eta_to": "2026-11-25", "score": 71,
+  "breakdown": [{ "label": "Severity 4/5", "points": 32 }, { "label": "Near a school", "points": 15 }],
+  "boosts": [{ "label": "2 neighbours confirm", "points": 10 }],
+  "owner": "Hackney Highways", "stage": "routed" }
+```
+
+Until `QUEUE_URL` is set, `src/lib/report/queue.ts` computes this from the open reports with a simple
+score (severity + safety + exposure + age vs published deadline) and a modelled crew capacity.
+
+### Reports (Manjeev, FixMyStreet harvest)
+
+The map reads `Report[]` from `GET /api/reports`. Until the harvest lands it serves seeded reports.
+Fields: `id, lat, lng, category, status (open|scheduled|fixed), title, created_at, source (app|fixmystreet),
+confirmations, photo_url?`. Manjeev: a JSON file or a Supabase `reports` table with these fields both work.
