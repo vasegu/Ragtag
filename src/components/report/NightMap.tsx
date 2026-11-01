@@ -16,6 +16,7 @@ type Props = {
   /** Report ids to ring as "still there?" quests. */
   questIds: string[];
   onSelect?: (report: Report) => void;
+  theme: "night" | "day";
 };
 
 function toGeoJSON(reports: Report[], questIds: string[]): GeoJSON.FeatureCollection {
@@ -37,11 +38,13 @@ function toGeoJSON(reports: Report[], questIds: string[]): GeoJSON.FeatureCollec
 }
 
 /** Mapbox Standard style at night: 3D buildings and landmarks, glowing report pins. */
-export function NightMap({ reports, focus, dropped, questIds, onSelect }: Props) {
+export function NightMap({ reports, focus, dropped, questIds, onSelect, theme }: Props) {
   const container = useRef<HTMLDivElement>(null);
   const map = useRef<mapboxgl.Map | null>(null);
   const marker = useRef<mapboxgl.Marker | null>(null);
   const idleSpin = useRef(true);
+  // The style loads with the starting light; later changes go through setConfigProperty.
+  const initialTheme = useRef(theme);
   const latest = useRef({ reports, questIds, onSelect });
   latest.current = { reports, questIds, onSelect };
 
@@ -58,7 +61,7 @@ export function NightMap({ reports, focus, dropped, questIds, onSelect }: Props)
       style: "mapbox://styles/mapbox/standard",
       config: {
         basemap: {
-          lightPreset: "night",
+          lightPreset: initialTheme.current,
           show3dObjects: true,
           showPointOfInterestLabels: false,
           showTransitLabels: false,
@@ -147,6 +150,11 @@ export function NightMap({ reports, focus, dropped, questIds, onSelect }: Props)
       map.current = null;
     };
   }, []);
+
+  useEffect(() => {
+    const m = map.current;
+    if (m?.isStyleLoaded()) m.setConfigProperty("basemap", "lightPreset", theme);
+  }, [theme]);
 
   useEffect(() => {
     const source = map.current?.getSource("reports") as mapboxgl.GeoJSONSource | undefined;

@@ -7,7 +7,7 @@ import { type Reward, usePlayer } from "@/lib/report/game";
 import { CATEGORY_META, type Classification, DEMO_LOCATION, type LatLng, type QueueInfo, type Report } from "@/lib/report/types";
 import type { MascotKind } from "./Mascot";
 import { NightMap } from "./NightMap";
-import { BadgesScreen, BoardScreen, CaptureScreen, HomeScreen, RewardOverlay, ScanScreen, TrackerScreen, VerifySheet } from "./screens";
+import { BadgesScreen, BoardScreen, CaptureScreen, HomeScreen, RewardOverlay, ScanScreen, StreakSheet, TrackerScreen, VerifySheet } from "./screens";
 import { PhoneFrame } from "./ui";
 
 const HackneyGame = dynamic(() => import("@/components/game/HackneyGame"), { ssr: false });
@@ -28,6 +28,11 @@ export function ReportApp() {
   const { player, act, reset } = usePlayer();
   const [mascot, setMascot] = useState<MascotKind>("fields");
   const [mapStyle, setMapStyle] = useState<"mapbox" | "game">(HAS_MAPBOX ? "mapbox" : "game");
+  // Day/night follows the clock by default (7am to 7pm is day); the panel can override it.
+  const [theme, setTheme] = useState<"night" | "day">(() => {
+    const h = new Date().getHours();
+    return h >= 7 && h < 19 ? "day" : "night";
+  });
   const [screen, setScreen] = useState<Screen>("home");
   const [reports, setReports] = useState<Report[]>([]);
   const [location, setLocation] = useState<LatLng>(DEMO_LOCATION);
@@ -43,6 +48,7 @@ export function ReportApp() {
   const [reference, setReference] = useState("");
   const [reward, setReward] = useState<Reward | null>(null);
   const [verifying, setVerifying] = useState<Report | null>(null);
+  const [streakOpen, setStreakOpen] = useState(false);
 
   useEffect(() => {
     fetch("/api/reports")
@@ -158,7 +164,7 @@ export function ReportApp() {
   };
 
   return (
-    <div className="relative h-dvh w-full overflow-hidden bg-[#0b1020]">
+    <div className={`relative h-dvh w-full overflow-hidden ${theme === "day" ? "bg-[#cfe0ee]" : "bg-[#0b1020]"}`}>
       <div className="absolute inset-0 hidden md:block">
         {mapStyle === "mapbox" ? (
           <NightMap
@@ -166,18 +172,19 @@ export function ReportApp() {
             focus={focus}
             dropped={dropped}
             questIds={questIds}
+            theme={theme}
             onSelect={(r) => {
               setFocus({ lat: r.lat, lng: r.lng });
               if (questIds.includes(r.id)) setVerifying(r);
             }}
           />
         ) : (
-          <HackneyGame reports={reports} focus={focus} />
+          <HackneyGame reports={reports} focus={focus} theme={theme} />
         )}
       </div>
 
       {/* Desktop overlay: title, live counts, mascot picker. */}
-      <div className="pointer-events-none absolute right-6 top-6 hidden w-[300px] space-y-3 md:block">
+      <div className="pointer-events-none absolute right-6 top-6 z-20 hidden w-[300px] space-y-3 md:block">
         <div className="pointer-events-auto rounded-[24px] bg-black/55 p-5 text-white backdrop-blur-xl ring-1 ring-white/10">
           <p className="font-mono text-[10.5px] uppercase tracking-[0.16em] text-hackney-lime">One Hackney · Report</p>
           <p className="mt-2 text-[22px] font-semibold leading-tight tracking-[-0.02em]">Snap it. See it ranked. Watch it get fixed.</p>
@@ -230,6 +237,16 @@ export function ReportApp() {
             ))}
           </div>
         </div>
+        <div className="pointer-events-auto flex items-center justify-between rounded-[20px] bg-black/55 p-3 text-white backdrop-blur-xl ring-1 ring-white/10">
+          <span className="pl-2 text-[12.5px] text-white/70">Time</span>
+          <div className="flex gap-1">
+            {(["day", "night"] as const).map((t) => (
+              <button key={t} onClick={() => setTheme(t)} className={`rounded-full px-3 py-1.5 text-[12.5px] font-medium ${theme === t ? "bg-white text-ink" : "text-white/70 hover:text-white"}`}>
+                {t === "day" ? "☀ Day" : "☾ Night"}
+              </button>
+            ))}
+          </div>
+        </div>
         <div className="pointer-events-auto flex gap-2">
           <Link href="/report/game" className="flex-1 rounded-[16px] bg-black/55 px-4 py-2.5 text-center text-[13px] font-medium text-white backdrop-blur-xl ring-1 ring-white/10 hover:bg-black/70">
             Game mode →
@@ -240,7 +257,7 @@ export function ReportApp() {
         </div>
       </div>
 
-      <div className="relative z-10 flex h-full items-center md:pl-10">
+      <div className="pointer-events-none relative z-10 flex h-full items-center md:pl-10">
         <PhoneFrame>
           <div className="h-full overflow-y-auto pt-2 md:pt-[54px]">
             {screen === "home" && (
@@ -254,6 +271,7 @@ export function ReportApp() {
                   setVerifying(q);
                 }}
                 onTab={(t) => setScreen(t)}
+                onStreak={() => setStreakOpen(true)}
               />
             )}
             {screen === "capture" && <CaptureScreen address={address} onPhoto={startScan} onBack={home} />}
@@ -275,6 +293,7 @@ export function ReportApp() {
             {screen === "board" && <BoardScreen player={player} onBack={home} />}
           </div>
 
+          {streakOpen && <StreakSheet player={player} onClose={() => setStreakOpen(false)} />}
           {verifying && <VerifySheet report={verifying} onAnswer={(a) => answerQuest(verifying, a)} onClose={() => setVerifying(null)} />}
           {reward && <RewardOverlay reward={reward} player={player} mascot={mascot} onClose={() => setReward(null)} />}
         </PhoneFrame>

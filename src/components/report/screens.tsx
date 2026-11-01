@@ -17,6 +17,7 @@ export function HomeScreen({
   onReport,
   onQuest,
   onTab,
+  onStreak,
 }: {
   player: Player;
   mascot: MascotKind;
@@ -24,6 +25,7 @@ export function HomeScreen({
   onReport: () => void;
   onQuest: (r: Report) => void;
   onTab: (t: "badges" | "board") => void;
+  onStreak: () => void;
 }) {
   const lv = levelFor(player.xp);
   const helpedToday = player.lastActive === new Date().toISOString().slice(0, 10);
@@ -38,7 +40,7 @@ export function HomeScreen({
           <Label>Hi, {player.handle}</Label>
           <p className="mt-0.5 text-[22px] font-semibold leading-tight tracking-[-0.02em]">Let&apos;s fix Hackney.</p>
         </div>
-        <button className="flex items-center gap-1 rounded-full bg-card px-3 py-1.5 shadow-card" aria-label={`${player.streak} day streak`}>
+        <button onClick={onStreak} className="flex items-center gap-1 rounded-full bg-card px-3 py-1.5 shadow-card transition active:scale-95" aria-label={`${player.streak} day streak`}>
           <Flame className={`h-5 w-5 ${helpedToday ? "" : "opacity-50 grayscale"}`} />
           <span className="text-[16px] font-semibold tabular-nums">{player.streak}</span>
         </button>
@@ -419,8 +421,82 @@ export function TrackerScreen({
             </div>
           ))}
         </div>
-        <button className="mt-2 h-11 w-full rounded-full bg-ink text-[14px] font-semibold text-white">Ask neighbours to confirm</button>
+        <ShareButton reference={reference} owner={queue.owner} />
       </Card>
+    </div>
+  );
+}
+
+/** Clipboard API where allowed, falling back to a hidden textarea (older browsers, iframes). */
+async function copy(text: string) {
+  try {
+    await navigator.clipboard.writeText(text);
+  } catch {
+    const el = document.createElement("textarea");
+    el.value = text;
+    el.style.position = "fixed";
+    el.style.opacity = "0";
+    document.body.appendChild(el);
+    el.select();
+    document.execCommand("copy");
+    el.remove();
+  }
+}
+
+function ShareButton({ reference, owner }: { reference: string; owner: string }) {
+  const [state, setState] = useState<"idle" | "shared" | "copied">("idle");
+  const share = async () => {
+    const url = `${window.location.origin}/report?r=${reference}`;
+    const text = `I've reported a problem to ${owner} on One Hackney (${reference}). If you see it too, confirm it's still there so it moves up the queue.`;
+    try {
+      if (navigator.share) {
+        await navigator.share({ title: "Confirm this report", text, url });
+        setState("shared");
+      } else {
+        await copy(`${text} ${url}`);
+        setState("copied");
+      }
+    } catch {
+      // share sheet dismissed
+    }
+  };
+  return (
+    <button onClick={share} className="mt-2 h-11 w-full rounded-full bg-ink text-[14px] font-semibold text-white transition hover:bg-hackney active:scale-[0.98]">
+      {state === "copied" ? "Link copied. Send it to a neighbour" : state === "shared" ? "Shared. Thanks!" : "Ask neighbours to confirm"}
+    </button>
+  );
+}
+
+export function StreakSheet({ player, onClose }: { player: Player; onClose: () => void }) {
+  const helpedToday = player.lastActive === new Date().toISOString().slice(0, 10);
+  const days = ["M", "T", "W", "T", "F", "S", "S"];
+  const todayIdx = (new Date().getDay() + 6) % 7;
+  return (
+    <div className="absolute inset-0 z-40 flex items-end bg-ink/40" onClick={onClose}>
+      <div className="slide-up w-full rounded-t-[32px] bg-card p-5 pb-8 text-center" onClick={(e) => e.stopPropagation()}>
+        <div className="mx-auto mb-4 h-1.5 w-10 rounded-full bg-line" />
+        <Flame className="mx-auto h-16 w-16" />
+        <p className="mt-2 text-[40px] font-semibold leading-none tracking-[-0.04em]">{player.streak} days</p>
+        <p className="mt-2 text-[14px] text-muted">
+          {helpedToday ? "You've helped today. See you tomorrow!" : "Report or confirm anything today to keep it going."}
+        </p>
+        <div className="mt-5 flex justify-center gap-2">
+          {days.map((d, i) => {
+            const lit = i < todayIdx ? i >= todayIdx - (player.streak - (helpedToday ? 1 : 0)) : i === todayIdx && helpedToday;
+            return (
+              <span key={i} className={`grid h-10 w-10 place-items-center rounded-full font-mono text-[12px] font-semibold ${lit ? "bg-gradient-to-b from-[#ffc93c] to-[#ff5a4e] text-white" : i === todayIdx ? "ring-2 ring-[#ffc93c] text-ink" : "bg-canvas text-muted"}`}>
+                {d}
+              </span>
+            );
+          })}
+        </div>
+        <div className="mt-5 rounded-[18px] bg-canvas p-3 text-left text-[13px] text-muted">
+          <span className="font-semibold text-ink">{player.freezes} streak freeze</span> saved. Miss a day and it keeps your streak. Streaks count any helpful action, so you never need a new problem to keep one.
+        </div>
+        <button onClick={onClose} className="mt-4 h-12 w-full rounded-full bg-ink text-[15px] font-semibold text-white">
+          Got it
+        </button>
+      </div>
     </div>
   );
 }

@@ -6,7 +6,7 @@ import { CATEGORY_META, type Category } from "@/lib/report/types";
 /** iPhone-style frame on desktop; on phones the app fills the screen. */
 export function PhoneFrame({ children }: { children: React.ReactNode }) {
   return (
-    <div className="relative h-dvh w-full md:h-[min(860px,calc(100dvh-48px))] md:w-auto md:aspect-[390/844] md:rounded-[58px] md:bg-[#0b0b0c] md:p-[11px] md:shadow-[0_40px_120px_rgba(0,0,0,0.55),inset_0_0_0_2px_rgba(255,255,255,0.08)]">
+    <div className="pointer-events-auto relative h-dvh w-full md:h-[min(860px,calc(100dvh-48px))] md:w-auto md:aspect-[390/844] md:rounded-[58px] md:bg-[#0b0b0c] md:p-[11px] md:shadow-[0_40px_120px_rgba(0,0,0,0.55),inset_0_0_0_2px_rgba(255,255,255,0.08)]">
       <div className="relative h-full w-full overflow-hidden bg-canvas md:rounded-[47px]">
         <div className="pointer-events-none absolute left-1/2 top-[11px] z-50 hidden h-[34px] w-[120px] -translate-x-1/2 rounded-full bg-black md:block" />
         <StatusBar />
