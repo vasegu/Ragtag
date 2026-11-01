@@ -1,6 +1,16 @@
 // Step 3: embed every chunk and upsert documents + chunks into Supabase.
 import pLimit from "p-limit";
-import { EMBEDDING_MODEL, ENRICHED_DIR, type EnrichedDoc, listJson, openai, readJson, supabaseAdmin } from "./lib";
+import {
+  EMBEDDING_MODEL,
+  ENRICHED_DIR,
+  type EnrichedDoc,
+  LOADED_DIR,
+  listJson,
+  openai,
+  readJson,
+  supabaseAdmin,
+  writeJson,
+} from "./lib";
 
 const BATCH = 64; // chunks per embeddings request
 const CONCURRENCY = 6;
@@ -21,16 +31,18 @@ function embedText(doc: EnrichedDoc, heading: string | undefined, content: strin
 async function main() {
   const db = supabaseAdmin();
   const ai = openai();
-  const ids = await listJson(ENRICHED_DIR);
+  // Skip documents already loaded unless RELOAD=1.
+  const loadedIds = new Set(process.env.RELOAD ? [] : await listJson(LOADED_DIR));
+  const ids = (await listJson(ENRICHED_DIR)).filter((id) => !loadedIds.has(id));
   const limit = pLimit(CONCURRENCY);
-  console.log(`load: ${ids.length} documents`);
+  console.log(`load: ${ids.length} documents (${loadedIds.size} already loaded)`);
 
   // Group documents so each embeddings request carries ~BATCH chunks.
-  const docs = (await Promise.all(ids.map((id) => readJson<EnrichedDoc>(ENRICHED_DIR, id)))).filter(
-    (d): d is EnrichedDoc => d !== null && d.chunks.length > 0,
-  );
-  const groups: EnrichedDoc[][] = [];
-  let current: EnrichedDoc[] = [];
+  const docs = (
+    await Promise.all(ids.map(async (id) => ({ id, doc: await readJson<EnrichedDoc>(ENRICHED_DIR, id) })))
+  ).flatMap(({ id, doc }) => (doc && doc.chunks.length > 0 ? [Object.assign(doc, { id })] : []));
+  const groups: (typeof docs)[] = [];
+  let current: typeof docs = [];
   let size = 0;
   for (const doc of docs) {
     if (size + doc.chunks.length > BATCH && current.length) {
@@ -91,6 +103,7 @@ async function main() {
           const { error: chunkError } = await db.from("chunks").insert(chunkRows);
           if (chunkError) throw new Error(`${doc.url} chunks: ${chunkError.message}`);
           chunkCount += chunkRows.length;
+          await writeJson(LOADED_DIR, doc.id, { url: doc.url, chunks: chunkRows.length });
         }
         loaded += group.length;
         if (loaded % 200 < group.length) console.log(`loaded ${loaded}/${docs.length} docs, ${chunkCount} chunks`);

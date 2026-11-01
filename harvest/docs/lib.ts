@@ -10,6 +10,7 @@ config({ path: [".env.local", ".env.secrets.local"], quiet: true });
 export const DATA_DIR = path.resolve("data");
 export const DOCS_DIR = path.join(DATA_DIR, "docs");
 export const ENRICHED_DIR = path.join(DATA_DIR, "enriched");
+export const LOADED_DIR = path.join(DATA_DIR, "loaded");
 
 export const USER_AGENT =
   "Mozilla/5.0 (compatible; OneHackneyHackathon/0.1; +https://github.com/vasegu/Ragtag)";

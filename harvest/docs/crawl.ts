@@ -199,7 +199,24 @@ async function main() {
 
   const pages = (await sitemapUrls()).slice(0, LIMIT);
   console.log(`sitemap: ${pages.length} pages`);
-  const pageDocs = await Promise.all(pages.map((p) => run(p.url, () => crawlHtml(p.url, "page", p.lastmod))));
+  const sitemapDocs = await Promise.all(pages.map((p) => run(p.url, () => crawlHtml(p.url, "page", p.lastmod))));
+
+  // The sitemap misses some pages; follow internal links from crawled pages one level deep.
+  const canonical = (href: string) => `https://hackney.gov.uk${new URL(href).pathname.replace(/\/$/, "")}`;
+  const known = new Set(pages.map((p) => canonical(p.url)));
+  const discovered = new Set<string>();
+  for (const doc of sitemapDocs) {
+    for (const [, href] of doc?.links ?? []) {
+      const u = new URL(href);
+      if (!/^(www\.)?hackney\.gov\.uk$/.test(u.hostname) || isPdfLink(href)) continue;
+      if (/\.\w{2,4}$/.test(u.pathname) || /^\/(search|user|node|sites|admin|media)\b/.test(u.pathname)) continue;
+      const url = canonical(href);
+      if (!known.has(url)) discovered.add(url);
+    }
+  }
+  console.log(`discovered ${discovered.size} pages not in the sitemap`);
+  const extraDocs = await Promise.all([...discovered].map((u) => run(u, () => crawlHtml(u, "page"))));
+  const pageDocs = [...sitemapDocs, ...extraDocs];
 
   // PDFs linked from Hackney pages, most-linked first, capped.
   const pdfCounts = new Map<string, { title: string; count: number }>();
