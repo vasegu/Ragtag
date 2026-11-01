@@ -393,26 +393,9 @@ export function TrackerScreen({
       {workOrder && <JobCard order={workOrder} reference={reference} address={report.title.split(", ").slice(1).join(", ") || report.title} />}
 
       <Card>
-        <Label>Why you&apos;re here</Label>
-        <div className="mt-3 space-y-2.5">
-          {queue.breakdown.map((b) => (
-            <div key={b.label}>
-              <div className="flex justify-between text-[13.5px]">
-                <span>{b.label}</span>
-                <span className="font-mono text-[12px] text-muted">+{b.points}</span>
-              </div>
-              <div className="mt-1 h-2 overflow-hidden rounded-full bg-canvas">
-                <div className="grow-x h-full rounded-full bg-gradient-to-r from-hackney to-hackney-bright" style={{ width: `${(b.points / maxPoints) * 100}%` }} />
-              </div>
-            </div>
-          ))}
-        </div>
-      </Card>
-
-      <Card>
-        <Label>Move it up</Label>
+        <Label>Speed it up</Label>
         <div className="mt-2 divide-y divide-line">
-          {queue.boosts.map((b) => (
+          {queue.boosts.slice(0, 2).map((b) => (
             <div key={b.label} className="flex items-center justify-between gap-3 py-2.5">
               <span className="text-[13.5px]">{b.label}</span>
               <span className="shrink-0 rounded-full bg-hackney-tint px-2.5 py-1 font-mono text-[11px] font-medium text-hackney">+{b.points}</span>
@@ -420,6 +403,22 @@ export function TrackerScreen({
           ))}
         </div>
         <ShareButton reference={reference} owner={queue.owner} />
+        <details className="group mt-3">
+          <summary className="cursor-pointer list-none text-[12.5px] font-medium text-muted underline decoration-line underline-offset-2">Why this position?</summary>
+          <div className="mt-2.5 space-y-2">
+            {queue.breakdown.map((b) => (
+              <div key={b.label}>
+                <div className="flex justify-between text-[12.5px]">
+                  <span>{b.label}</span>
+                  <span className="font-mono text-[11px] text-muted">+{b.points}</span>
+                </div>
+                <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-canvas">
+                  <div className="h-full rounded-full bg-gradient-to-r from-hackney to-hackney-bright" style={{ width: `${(b.points / maxPoints) * 100}%` }} />
+                </div>
+              </div>
+            ))}
+          </div>
+        </details>
       </Card>
     </div>
   );

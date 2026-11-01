@@ -182,11 +182,7 @@ export function buildTrack(report: Report, all: Report[], opts: { classification
       lines:
         owner.kind === "hackney"
           ? [
-              actions.join(" → "),
-              ...(queue
-                ? [`#${queue.category.position} of ${queue.category.total} ${meta.label.toLowerCase()} jobs · #${queue.overall.position} of ${queue.overall.total} overall`]
-                : []),
-              `Published target: ${meta.deadline}`,
+              `${actions.join(" → ")} · target ${meta.deadline}`,
             ]
           : ["Hackney has passed this on. Track it with them."],
     },
@@ -200,7 +196,7 @@ export function buildTrack(report: Report, all: Report[], opts: { classification
         : dispatched
           ? ["Action scheduled by Hackney."]
           : eta
-            ? [`Estimated ${range(eta.from, eta.to)} (our estimate, not a Hackney date)`]
+            ? [`Estimated ${range(eta.from, eta.to)}`]
             : [],
     },
     {

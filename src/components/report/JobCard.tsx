@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import type { WorkOrder } from "@/features/street-brain/contracts";
 import { IconWrench } from "./icons";
 
@@ -12,6 +13,7 @@ const MODE: Record<WorkOrder["deliveryMode"], { label: string; style: string }> 
 /** A crew-ready work order from pipeline decision 5: what a worker needs on their phone. */
 export function JobCard({ order, reference, address }: { order: WorkOrder; reference: string; address: string }) {
   const mode = MODE[order.deliveryMode];
+  const [open, setOpen] = useState(false);
   return (
     <div className="overflow-hidden rounded-[24px] bg-card shadow-card">
       <div className="flex items-start gap-3 bg-ink p-4 text-white">
@@ -37,7 +39,13 @@ export function JobCard({ order, reference, address }: { order: WorkOrder; refer
         <Stat label="On site" value={`${order.estimatedMinutes.min}–${order.estimatedMinutes.max} min`} />
       </div>
 
-      <div className="space-y-3 p-4">
+      {!open && (
+        <button onClick={() => setOpen(true)} className="flex w-full items-center justify-between px-4 py-3 text-left text-[13px] font-medium text-hackney hover:bg-hackney-tint/40">
+          See the crew&apos;s full job card · {order.tasks.length} tasks
+          <span aria-hidden>↓</span>
+        </button>
+      )}
+      {open && <div className="space-y-3 p-4">
         <div className="flex flex-wrap items-center gap-1.5">
           <span className={`rounded-full px-2 py-0.5 font-mono text-[10px] uppercase tracking-[0.08em] ${mode.style}`}>{mode.label}</span>
           <span className="rounded-full bg-canvas px-2 py-0.5 font-mono text-[10px] text-muted">
@@ -94,7 +102,10 @@ export function JobCard({ order, reference, address }: { order: WorkOrder; refer
         )}
 
         <p className="font-mono text-[9.5px] text-muted">Batch: {order.bundleKey} · planning estimates, not confirmed Hackney rates</p>
-      </div>
+        <button onClick={() => setOpen(false)} className="text-[12.5px] font-medium text-muted underline underline-offset-2">
+          Hide details
+        </button>
+      </div>}
     </div>
   );
 }

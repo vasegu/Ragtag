@@ -79,7 +79,7 @@ function StageRow({ stage, last }: { stage: Stage; last: boolean }) {
   const done = stage.state === "done";
   const current = stage.state === "current";
   return (
-    <li className="relative flex gap-3 pb-3">
+    <li className={`relative flex gap-3 ${current ? "pb-3" : "pb-2.5"}`}>
       {!last && <span className={`absolute left-[11px] top-6 h-[calc(100%-18px)] w-[2px] ${done ? "bg-hackney-bright" : "bg-line"}`} />}
       <span
         className={`relative z-10 mt-0.5 grid h-6 w-6 shrink-0 place-items-center rounded-full ${
@@ -99,11 +99,13 @@ function StageRow({ stage, last }: { stage: Stage; last: boolean }) {
           <p className={`text-[14.5px] font-semibold ${stage.state === "upcoming" ? "text-muted" : ""}`}>{stage.title}</p>
           {stage.at && <span className="shrink-0 font-mono text-[10.5px] text-muted">{when(stage.at)}</span>}
         </div>
-        {stage.lines.map((l, i) => (
-          <p key={i} className={`mt-0.5 text-[12.5px] leading-snug ${stage.state === "upcoming" ? "text-muted/80" : "text-muted"}`}>
-            {l}
-          </p>
-        ))}
+        {/* Only the stage in progress explains itself; the rest stay one line. */}
+        {current &&
+          stage.lines.map((l, i) => (
+            <p key={i} className="mt-0.5 text-[12.5px] leading-snug text-muted">
+              {l}
+            </p>
+          ))}
       </div>
     </li>
   );
