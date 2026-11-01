@@ -23,7 +23,7 @@ export const defaultScenario: Scenario = {
     { id: "arboriculture", name: "Arborist team / contractor", trade: "arboriculture", count: 0, people: 3 },
     { id: "drainage", name: "Drainage team / contractor", trade: "drainage", count: 0, people: 2 },
     { id: "specialist", name: "Specialist contractor", trade: "specialist", count: 0, people: 2 },
-  ], equipment: [], materials: [], start: 480, end: 960, buffer: 15, budget: 5000, inspectionMinutes: 30, inspectionCost: 35,
+  ], equipment: [{ name: "Inspection kit", quantity: 2 }, { name: "Jetting unit", quantity: 1 }], materials: [{ name: "Inspection consumables", quantity: 100 }, { name: "Paving slab", quantity: 20 }], start: 480, end: 960, buffer: 15, budget: 5000, inspectionMinutes: 30, inspectionCost: 35,
 };
 export function defaultPlanning(issue: RepairIssue, scenario: Scenario): Planning {
   return { priority: issue.priority, reason: issue.proposal ? `Stored AI proposal, not human-verified: ${issue.proposal.reason}` : "", action: "Inspect", recommendation: "Inspect the reported issue, confirm ownership and establish the repair scope.", trade: "inspection", minutes: scenario.inspectionMinutes, crewSize: 1, cost: scenario.inspectionCost, materials: [], equipment: [], scopeReady: false, dueAt: "", policyUrl: "", deadlineAction: "Inspect" };

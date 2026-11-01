@@ -41,7 +41,7 @@ function DeliveryChart({ data }: { data: ReturnType<typeof summarise>["trend"] }
 }
 function Review({ action, decision, save }: { action: Action; decision?: Decision; save: (status: Decision["status"], reason: string) => string | null }) {
   const [choice, setChoice] = useState<Decision["status"]>("approved");
-  const [reason, setReason] = useState("");
+  const [reason, setReason] = useState("Demo review: proceed with the proposed slot and resources, subject to confirming ownership, scope and availability.");
   const [error, setError] = useState("");
   function submit(e: FormEvent) { e.preventDefault(); setError(save(choice, reason) ?? ""); }
   return <><div className="pm-review-summary"><Badge severity={action.severity} /><p>{action.task} · {action.mode}</p><strong>{money(action.cost)}</strong><span>Estimated additional cash</span></div>

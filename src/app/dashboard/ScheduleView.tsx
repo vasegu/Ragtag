@@ -10,8 +10,8 @@ const gbp = (n: number) => new Intl.NumberFormat("en-GB", { style: "currency", c
 const dayLabel = (date: string) => new Date(`${date}T12:00:00Z`).toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short", timeZone: "Europe/London" });
 function ResourceEditor({ scenario, save }: { scenario: Scenario; save: (s: Scenario) => void }) {
   const [draft, setDraft] = useState(scenario);
-  const [kit, setKit] = useState(requirementText(scenario.equipment));
-  const [stock, setStock] = useState(requirementText(scenario.materials));
+  const [kit, setKit] = useState(requirementText(scenario.equipment.length ? scenario.equipment : defaultScenario.equipment));
+  const [stock, setStock] = useState(requirementText(scenario.materials.length ? scenario.materials : defaultScenario.materials));
   const [error, setError] = useState("");
   function submit(e: FormEvent) {
     e.preventDefault();
