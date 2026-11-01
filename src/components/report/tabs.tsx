@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import Link from "next/link";
 import { Answer } from "@/components/ask/Answer";
 import { type Turn, useAsk } from "@/lib/ask/useAsk";
 import { useVoice } from "@/lib/ask/useVoice";
@@ -127,6 +128,12 @@ export function FrontDoor({
         </span>
         <span className="text-[20px] text-white/50 transition group-hover:translate-x-1">→</span>
       </button>
+
+      <Link href="/dashboard" className="group flex items-center gap-4 rounded-[24px] bg-card p-4 text-left shadow-card ring-1 ring-line transition hover:shadow-card-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-hackney">
+        <span className="grid h-12 w-12 shrink-0 place-items-center rounded-[16px] bg-hackney-tint text-hackney"><IconWrench className="h-6 w-6" /></span>
+        <span className="min-w-0 flex-1"><span className="block text-[16px] font-semibold">Council workspace</span><span className="block text-[12.5px] text-muted">Review priorities and plan work</span></span>
+        <span aria-hidden="true" className="text-xl text-hackney transition group-hover:translate-x-1">→</span>
+      </Link>
 
       <div className="grid grid-cols-4 gap-2">
         {QUICK.map((q) => (

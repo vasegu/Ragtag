@@ -74,6 +74,7 @@ export function AskChat() {
 
             <div className="mt-6 flex flex-wrap items-center gap-3">
               <Link href="/street-report" className="rounded-full bg-hackney px-5 py-3 text-[14px] font-medium text-white transition hover:bg-ink">Report a street issue →</Link>
+              <Link href="/dashboard" className="rounded-full bg-card px-5 py-3 text-[14px] font-medium text-hackney shadow-card transition hover:shadow-card-hover">Council workspace →</Link>
               <Link href="/street-report/pipeline" className="px-3 py-2 text-[13px] text-muted hover:text-hackney">How photo decisions work ↗</Link>
             </div>
             <Stats />
@@ -105,7 +106,7 @@ export function AskChat() {
 function TopBar({ onReset }: { onReset?: () => void }) {
   return (
     <header className="mx-auto flex w-full max-w-[1200px] items-center justify-between px-4 py-4 sm:px-6">
-      <button onClick={onReset} disabled={!onReset} className="flex items-center gap-3 text-left disabled:cursor-default">
+      <Link href="/" aria-label="One Hackney home" className="flex items-center gap-3 text-left">
         <span className="grid h-10 w-10 place-items-center rounded-[12px] bg-hackney text-white shadow-card">
           <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round">
             <path d="M7 5v14M17 5v14M7 12h10" />
@@ -115,7 +116,7 @@ function TopBar({ onReset }: { onReset?: () => void }) {
           <span className="block text-[17px] font-semibold tracking-[-0.01em]">One Hackney</span>
           <span className="block font-mono text-[10.5px] uppercase tracking-[0.14em] text-muted">Ask the council</span>
         </span>
-      </button>
+      </Link>
       <div className="flex items-center gap-2">
         <Link href="/street-report" className="rounded-full bg-hackney-tint px-4 py-2 text-[13px] font-medium text-hackney transition hover:bg-hackney/15">Report an issue</Link>
         {onReset && (

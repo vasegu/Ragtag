@@ -27,7 +27,7 @@ function Mark(){return <span className="mark" aria-hidden="true"><svg viewBox="0
 function Arrow(){return <span aria-hidden="true">↗</span>;}
 
 export default function StreetReports(){
-  return <div className="app"><header className="header"><Link href="/street-report" className="brand"><Mark/><span><strong>One Hackney</strong><small>STREET REPORTS</small></span></Link><nav aria-label="Workspace"><Link href="/street-report" className="nav-active">Report an issue</Link><Link href="/dashboard">Council workspace <Arrow/></Link></nav></header>
+  return <div className="app"><header className="header"><Link href="/" className="brand" aria-label="One Hackney home"><Mark/><span><strong>One Hackney</strong><small>STREET REPORTS</small></span></Link><nav aria-label="Workspace"><Link href="/street-report" className="nav-active">Report an issue</Link><Link href="/dashboard">Council workspace <Arrow/></Link></nav></header>
     <Resident/>
     <footer><span>Built for the Hackney hackathon · an independent prototype.</span><Link href="/street-report/pipeline">How reports are assessed <Arrow/></Link><a href="https://www.hackney.gov.uk/" target="_blank" rel="noreferrer">Official council website <Arrow/></a></footer>
   </div>;
