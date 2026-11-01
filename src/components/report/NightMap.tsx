@@ -186,5 +186,10 @@ export function NightMap({ reports, focus, dropped, questIds, onSelect, theme }:
     marker.current = new mapboxgl.Marker({ element: el, pitchAlignment: "map" }).setLngLat([dropped.lng, dropped.lat]).addTo(map.current);
   }, [dropped]);
 
-  return <div ref={container} className="absolute inset-0" />;
+  // Mapbox sets `position: relative` on its container, so it needs an explicitly sized parent.
+  return (
+    <div className="absolute inset-0">
+      <div ref={container} className="h-full w-full" />
+    </div>
+  );
 }
