@@ -83,20 +83,8 @@ export function ReportApp() {
   useEffect(() => {
     fetch("/api/reports")
       .then((r) => r.json())
-      .then((d: { reports: Report[] }) => {
-        setReports(d.reports);
-        // Warm the browser cache with report photos so switching between problems is instant.
-        d.reports
-          .filter((r) => r.photo_url)
-          .slice(0, 120)
-          .forEach((r, i) =>
-            setTimeout(() => {
-              const img = new Image();
-              img.decoding = "async";
-              img.src = r.photo_url!;
-            }, i * 40),
-          );
-      });
+      // Photos load only when a report is opened (see openReport), never in bulk.
+      .then((d: { reports: Report[] }) => setReports(d.reports));
   }, []);
 
   // Real GPS when it's inside Hackney; otherwise stay at the London Fields demo spot.
