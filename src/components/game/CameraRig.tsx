@@ -25,6 +25,29 @@ export function CameraRig({ focus, origin, reducedMotion }: { focus?: Location |
     flight.current = { elapsed: 0, duration: reducedMotion ? 0 : firstFlight.current ? 4.2 : 1.8, from: camera.position.clone(), to, fromTarget: controls.current.target.clone(), target };
   }, [camera, focus, origin, reducedMotion]);
 
+  useEffect(() => {
+    function onKeyDown(event: KeyboardEvent) {
+      if (!["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(event.key) || event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) return;
+      const active = document.activeElement;
+      if (active && active !== document.body && !(active instanceof HTMLCanvasElement)) return;
+      const control = controls.current;
+      if (!control) return;
+      event.preventDefault();
+      flight.current = null;
+      firstFlight.current = false;
+      const forward = new Vector3().subVectors(control.target, camera.position).setY(0).normalize();
+      const right = new Vector3(-forward.z, 0, forward.x);
+      const direction = event.key === "ArrowUp" ? forward : event.key === "ArrowDown" ? forward.negate() : event.key === "ArrowRight" ? right : right.negate();
+      const distance = Math.max(20, camera.position.distanceTo(control.target) * 0.045);
+      const movement = direction.multiplyScalar(distance);
+      camera.position.add(movement);
+      control.target.add(movement);
+      control.update();
+    }
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [camera]);
+
   useFrame((_, delta) => {
     if (!controls.current) return;
     const current = flight.current;

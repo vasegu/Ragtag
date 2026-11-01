@@ -273,6 +273,7 @@ export function ReportApp() {
       {/* Desktop overlay: title, live counts, mascot picker. */}
       <div className="pointer-events-none absolute right-6 top-6 z-20 hidden w-[300px] space-y-3 md:block">
         <Link href="/dashboard" className="pointer-events-auto flex items-center justify-between rounded-[20px] bg-white px-5 py-3.5 text-[14px] font-semibold text-hackney shadow-card transition hover:bg-hackney-tint focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white">Council workspace <span aria-hidden="true">→</span></Link>
+        <div className="pointer-events-auto rounded-[16px] bg-black/55 px-4 py-3 text-[13px] text-white backdrop-blur-xl ring-1 ring-white/10">{mapStyle === "game" ? "Use the arrow keys to move the map" : "Click the map, then use the arrow keys to move"} <span aria-hidden="true">↑ ↓ ← →</span></div>
         <div className="pointer-events-auto rounded-[24px] bg-black/55 p-5 text-white backdrop-blur-xl ring-1 ring-white/10">
           <p className="font-mono text-[10.5px] uppercase tracking-[0.16em] text-hackney-lime">One Hackney</p>
           <p className="mt-2 text-[22px] font-semibold leading-tight tracking-[-0.02em]">One app for the council. Ask anything, report anything, see it fixed.</p>
