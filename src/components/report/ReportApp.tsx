@@ -1,5 +1,6 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { type Reward, usePlayer } from "@/lib/report/game";
@@ -8,6 +9,10 @@ import type { MascotKind } from "./Mascot";
 import { NightMap } from "./NightMap";
 import { BadgesScreen, BoardScreen, CaptureScreen, HomeScreen, RewardOverlay, ScanScreen, TrackerScreen, VerifySheet } from "./screens";
 import { PhoneFrame } from "./ui";
+
+const HackneyGame = dynamic(() => import("@/components/game/HackneyGame"), { ssr: false });
+
+const HAS_MAPBOX = Boolean(process.env.NEXT_PUBLIC_MAPBOX_TOKEN);
 
 type Screen = "home" | "capture" | "scan" | "tracker" | "badges" | "board";
 
@@ -22,6 +27,7 @@ function metres(a: LatLng, b: LatLng) {
 export function ReportApp() {
   const { player, act, reset } = usePlayer();
   const [mascot, setMascot] = useState<MascotKind>("fields");
+  const [mapStyle, setMapStyle] = useState<"mapbox" | "game">(HAS_MAPBOX ? "mapbox" : "game");
   const [screen, setScreen] = useState<Screen>("home");
   const [reports, setReports] = useState<Report[]>([]);
   const [location, setLocation] = useState<LatLng>(DEMO_LOCATION);
@@ -154,16 +160,20 @@ export function ReportApp() {
   return (
     <div className="relative h-dvh w-full overflow-hidden bg-[#0b1020]">
       <div className="absolute inset-0 hidden md:block">
-        <NightMap
-          reports={reports}
-          focus={focus}
-          dropped={dropped}
-          questIds={questIds}
-          onSelect={(r) => {
-            setFocus({ lat: r.lat, lng: r.lng });
-            if (questIds.includes(r.id)) setVerifying(r);
-          }}
-        />
+        {mapStyle === "mapbox" ? (
+          <NightMap
+            reports={reports}
+            focus={focus}
+            dropped={dropped}
+            questIds={questIds}
+            onSelect={(r) => {
+              setFocus({ lat: r.lat, lng: r.lng });
+              if (questIds.includes(r.id)) setVerifying(r);
+            }}
+          />
+        ) : (
+          <HackneyGame reports={reports} focus={focus} />
+        )}
       </div>
 
       {/* Desktop overlay: title, live counts, mascot picker. */}
@@ -200,6 +210,22 @@ export function ReportApp() {
             {(["fields", "fox"] as const).map((m) => (
               <button key={m} onClick={() => setMascot(m)} className={`rounded-full px-3 py-1.5 text-[12.5px] font-medium ${mascot === m ? "bg-white text-ink" : "text-white/70 hover:text-white"}`}>
                 {m === "fields" ? "London Fields" : "Fox"}
+              </button>
+            ))}
+          </div>
+        </div>
+        <div className="pointer-events-auto flex items-center justify-between rounded-[20px] bg-black/55 p-3 text-white backdrop-blur-xl ring-1 ring-white/10">
+          <span className="pl-2 text-[12.5px] text-white/70">Map</span>
+          <div className="flex gap-1">
+            {(["mapbox", "game"] as const).map((m) => (
+              <button
+                key={m}
+                onClick={() => setMapStyle(m)}
+                disabled={m === "mapbox" && !HAS_MAPBOX}
+                title={m === "mapbox" && !HAS_MAPBOX ? "Set NEXT_PUBLIC_MAPBOX_TOKEN" : undefined}
+                className={`rounded-full px-3 py-1.5 text-[12.5px] font-medium disabled:opacity-40 ${mapStyle === m ? "bg-white text-ink" : "text-white/70 hover:text-white"}`}
+              >
+                {m === "mapbox" ? "Real 3D" : "Game"}
               </button>
             ))}
           </div>
