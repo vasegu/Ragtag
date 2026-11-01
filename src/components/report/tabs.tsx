@@ -100,6 +100,7 @@ export function FrontDoor({
           <span className="text-[15px] font-semibold tabular-nums">{player.streak}</span>
           <span className="ml-1 rounded-full bg-hackney-tint px-1.5 font-mono text-[10px] font-semibold text-hackney">L{lv.level}</span>
         </button>
+        <Link href="/dashboard" className="rounded-full bg-hackney px-3 py-2 text-center text-[11px] font-semibold leading-tight text-white shadow-card transition hover:bg-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-hackney md:hidden">Council<br />workspace</Link>
       </div>
 
       <div className="flex w-full items-center gap-2 rounded-[22px] bg-card py-1.5 pl-4 pr-1.5 shadow-card ring-1 ring-line">
