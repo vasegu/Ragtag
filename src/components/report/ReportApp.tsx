@@ -358,7 +358,7 @@ export function ReportApp() {
                 classification={classification}
                 error={scanError}
                 submitting={submitting}
-                pipeline={{ trace: pipeline.result?.trace ?? null, running: pipeline.running, error: pipeline.error }}
+                pipeline={{ trace: pipeline.result?.trace ?? null, running: pipeline.running, error: pipeline.error, jobId: pipeline.result?.jobId, receipt: pipeline.result?.receipt }}
                 onSubmit={submit}
                 onBack={() => setScreen("capture")}
               />

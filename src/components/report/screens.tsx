@@ -8,8 +8,8 @@ import { Mascot, type MascotKind, type MascotMood } from "./Mascot";
 import { Timeline } from "./Timeline";
 import { DecisionTree } from "./DecisionTree";
 import { JobCard } from "./JobCard";
-import type { Decision } from "@/lib/report/pipeline";
-import type { WorkOrder } from "@/features/street-brain/contracts";
+import { type Decision, sendFeedback } from "@/lib/report/pipeline";
+import { CATEGORIES as SB_CATEGORIES, type WorkOrder } from "@/features/street-brain/contracts";
 import { IconTrophy } from "./icons";
 import { BadgeImage, Card, CategoryIcon, Flame, Label, Rings } from "./ui";
 
@@ -258,9 +258,11 @@ export function ScanScreen({
   onSubmit: () => void;
   onBack: () => void;
   submitting: boolean;
-  pipeline: { trace: Decision[] | null; running: boolean; error: string | null };
+  pipeline: { trace: Decision[] | null; running: boolean; error: string | null; jobId?: string; receipt?: string };
 }) {
   const [shown, setShown] = useState(0);
+  const [dispute, setDispute] = useState<{ stage: number; answer: string } | null>(null);
+  const [disputed, setDisputed] = useState<Record<number, string>>({});
   const findings = classification
     ? [
         { k: "Category", v: CATEGORY_META[classification.category].label },
@@ -321,6 +323,8 @@ export function ScanScreen({
                 ]
               : [null, null, null, null, null]
           }
+          disputed={disputed}
+          onDispute={pipeline.jobId ? (stage, answer) => setDispute({ stage, answer }) : undefined}
         />
       </div>
 
@@ -331,6 +335,19 @@ export function ScanScreen({
       >
         {submitting ? "Sending…" : "Send to Hackney · +50 XP"}
       </button>
+      {dispute && pipeline.jobId && pipeline.receipt && (
+        <DisputeSheet
+          stage={dispute.stage}
+          aiAnswer={dispute.answer}
+          jobId={pipeline.jobId}
+          receipt={pipeline.receipt}
+          onClose={() => setDispute(null)}
+          onSent={(value) => {
+            setDisputed((d) => ({ ...d, [dispute.stage]: value }));
+            setDispute(null);
+          }}
+        />
+      )}
     </div>
   );
 }
@@ -677,3 +694,84 @@ function TopNav({ title, onBack }: { title: string; onBack: () => void }) {
   );
 }
 
+/* ------------------------------ Dispute sheet ------------------------------ */
+
+const OWNERS = ["Hackney Council", "TfL", "Utility company", "Private owner", "Other council", "Not sure"];
+const SEVERITIES = ["1 · Minor", "2 · Low", "3 · Moderate", "4 · Serious", "5 · Critical"];
+
+/** The uploader disagrees with one AI decision: pick the right answer and/or explain. */
+function DisputeSheet({
+  stage,
+  aiAnswer,
+  jobId,
+  receipt,
+  onClose,
+  onSent,
+}: {
+  stage: number;
+  aiAnswer: string;
+  jobId: string;
+  receipt: string;
+  onClose: () => void;
+  onSent: (value: string) => void;
+}) {
+  const field = stage === 2 ? "category" : stage === 3 ? "responsibility" : stage === 4 ? "severity" : "other";
+  const options = stage === 2 ? [...SB_CATEGORIES, "Something else"] : stage === 3 ? OWNERS : stage === 4 ? SEVERITIES : [];
+  const [choice, setChoice] = useState<string | null>(null);
+  const [comment, setComment] = useState("");
+  const [sending, setSending] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const title = stage === 2 ? "What is it really?" : stage === 3 ? "Who's actually responsible?" : stage === 4 ? "How bad is it really?" : "What should the work be?";
+
+  const send = async () => {
+    setSending(true);
+    setError(null);
+    try {
+      await sendFeedback({ jobId, receipt, stage, field, aiValue: aiAnswer.slice(0, 400), residentValue: choice, comment: comment.trim() || null });
+      onSent(choice ?? (comment.trim().slice(0, 60) || "disagreed"));
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Couldn't send that.");
+      setSending(false);
+    }
+  };
+
+  return (
+    <div className="absolute inset-0 z-50 flex items-end bg-ink/40" onClick={onClose}>
+      <div className="slide-up max-h-[82%] w-full overflow-y-auto rounded-t-[32px] bg-card p-5 pb-8" onClick={(e) => e.stopPropagation()}>
+        <div className="mx-auto mb-4 h-1.5 w-10 rounded-full bg-line" />
+        <Label>Disagree with step {stage}</Label>
+        <p className="mt-1 text-[19px] font-semibold tracking-[-0.01em]">{title}</p>
+        <p className="mt-1 text-[12.5px] text-muted">The AI said: {aiAnswer.length > 120 ? `${aiAnswer.slice(0, 120)}…` : aiAnswer}</p>
+        {options.length > 0 && (
+          <div className="mt-3 flex flex-wrap gap-1.5">
+            {options.map((o) => (
+              <button
+                key={o}
+                onClick={() => setChoice(o === choice ? null : o)}
+                className={`rounded-full px-3 py-1.5 text-[12.5px] transition ${o === choice ? "bg-ink text-white" : "bg-canvas text-ink hover:bg-hackney-tint"}`}
+              >
+                {o}
+              </button>
+            ))}
+          </div>
+        )}
+        <textarea
+          value={comment}
+          onChange={(e) => setComment(e.target.value)}
+          rows={3}
+          placeholder="Anything else we should know? (optional)"
+          className="mt-3 w-full resize-none rounded-[16px] bg-canvas p-3 text-[14px] outline-none placeholder:text-muted focus:ring-2 focus:ring-hackney/30"
+        />
+        {error && <p className="mt-2 text-[12.5px] text-[#b42318]">{error}</p>}
+        <button
+          onClick={send}
+          disabled={sending || (!choice && !comment.trim())}
+          className="mt-3 h-12 w-full rounded-full bg-ink text-[15px] font-semibold text-white disabled:bg-ink/25"
+        >
+          {sending ? "Sending…" : "Send to a person to review"}
+        </button>
+        <p className="mt-2 text-center text-[11.5px] text-muted">Your report still goes through. A council officer sees your correction.</p>
+      </div>
+    </div>
+  );
+}

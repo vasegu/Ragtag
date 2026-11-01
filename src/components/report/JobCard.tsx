@@ -25,6 +25,12 @@ export function JobCard({ order, reference, address }: { order: WorkOrder; refer
         </div>
       </div>
 
+      <div className="border-b border-line bg-hackney-tint/50 px-4 py-3">
+        <p className="font-mono text-[10px] uppercase tracking-[0.12em] text-hackney">What we&apos;ll need · {order.size.band}</p>
+        <p className="mt-0.5 text-[13.5px] font-medium leading-snug">{order.size.quantity}</p>
+        <p className="text-[12px] leading-snug text-muted">{order.size.description}</p>
+      </div>
+
       <div className="grid grid-cols-3 divide-x divide-line border-b border-line text-center">
         <Stat label="Trade" value={order.trade} />
         <Stat label="Crew" value={`${order.crewSize}`} />

@@ -25,6 +25,7 @@ export const contextSchema = z.object({
 export type Context = z.infer<typeof contextSchema>;
 export const workOrderSchema = z.object({
   summary: z.string(),
+  size: z.object({ band: z.enum(['small', 'medium', 'large', 'very large', 'unknown']), description: z.string(), quantity: z.string() }),
   trade: z.string(),
   crewSize: z.number().int().min(1).max(12),
   estimatedMinutes: z.object({ min: z.number(), max: z.number() }),

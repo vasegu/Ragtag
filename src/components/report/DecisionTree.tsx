@@ -31,11 +31,16 @@ export function DecisionTree({
   running,
   error,
   firstLook,
+  onDispute,
+  disputed = {},
 }: {
   trace: Decision[] | null;
   running: boolean;
   error: string | null;
   firstLook: FirstLook;
+  /** Resident disagrees with a decided step (2-5). */
+  onDispute?: (stage: number, answer: string) => void;
+  disputed?: Record<number, string>;
 }) {
   const [thinking, setThinking] = useState(0);
   const [revealed, setRevealed] = useState(0);
@@ -106,6 +111,16 @@ export function DecisionTree({
                   <div className="pop-in">
                     <p className="mt-0.5 text-[13px] leading-snug text-ink">{d!.answer}</p>
                     {!skipped && <Fork status={d!.status} />}
+                    {disputed[i + 1] ? (
+                      <p className="mt-1.5 rounded-[10px] bg-[#fff4e0] px-2 py-1 text-[11.5px] text-[#a05a00]">You said: {disputed[i + 1]} · sent to a person to review</p>
+                    ) : (
+                      onDispute &&
+                      i > 0 && (
+                        <button onClick={() => onDispute(i + 1, d!.answer)} className="mt-1 text-[11.5px] font-medium text-muted underline decoration-line underline-offset-2 hover:text-ink">
+                          Not right?
+                        </button>
+                      )
+                    )}
                   </div>
                 ) : provisional ? (
                   <p className="mt-0.5 flex items-center gap-1.5 text-[12.5px] leading-snug text-muted">

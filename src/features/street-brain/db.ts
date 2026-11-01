@@ -22,8 +22,27 @@ export async function saveAssessment(result:Assessment,photos:{type:string;bytes
     }
     const {error}=await client.from(table()).upsert({id:result.id,source_mode:mode,source_report_id:sourceReportId,created_at:result.createdAt,address:result.address,latitude:result.location?.lat??null,longitude:result.location?.lon??null,resident_description:residentDescription,category:result.category,severity:result.severity,queue:result.queue,outcome:result.outcome,assessment:{...result,saved:true},photo_paths:paths});
     if(error)throw new AppError(503,'The assessment table is not ready or rejected the record. Complete the Supabase setup query.');
+    if(result.workOrder)await saveProblemJob(result);
     return {...result,saved:true};
   }catch(error){if(paths.length)await client.storage.from(bucket()).remove(paths);throw error;}
+}
+
+/** One planning row per problem (problem_jobs): what the job needs, for the day planner and supply matching. */
+async function saveProblemJob(result:Assessment){
+  const w=result.workOrder;if(!w)return;
+  const trade=w.trade.toLowerCase();
+  const {error}=await db().from('problem_jobs').upsert({
+    problem_id:result.id,updated_at:new Date().toISOString(),category:result.category,trade:w.trade,bundle_key:w.bundleKey,
+    size_band:w.size.band,size_description:w.size.description,quantity:w.size.quantity,
+    materials:w.materials,equipment:w.equipment,crew_size:w.crewSize,
+    minutes_min:Math.round(w.estimatedMinutes.min),minutes_max:Math.round(w.estimatedMinutes.max),
+    traffic_management:w.trafficManagement,delivery_mode:w.deliveryMode,cost_low:w.costRange.low,cost_high:w.costRange.high,
+    address:result.address,lat:result.location?.lat??null,lon:result.location?.lon??null,
+    status:w.deliveryMode==='refer'?'referred':'unscheduled',
+    // Simple first match on trade keyword; the day planner can reassign.
+    supply_unit_id:w.deliveryMode==='refer'?null:/highway|road|paving|footway/.test(trade)?(w.deliveryMode==='contractor'?'highways-ctr':'highways-1'):/graffiti/.test(trade)?'graffiti-1':/waste|fly/.test(trade)?'waste-1':/cleans|litter/.test(trade)?'cleansing-1':/electric|light/.test(trade)?'lighting-1':/enforce|parking/.test(trade)?'parking-1':null,
+  },{onConflict:'problem_id'});
+  if(error)console.error('problem_jobs upsert failed',error.message);
 }
 
 export async function listAssessments(){
