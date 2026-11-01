@@ -209,7 +209,7 @@ export default function HackneyGame({ reports = NO_REPORTS, focus = null, onMapR
 
   return <div style={{ position: "absolute", inset: 0, background: PALETTE[theme].bg, transition: "background 400ms" }}>
     {loaded ? <SceneBoundary>
-      <Canvas camera={{ position: [3100, 5800, 5300], fov: 42, near: 2, far: 30000 }} dpr={[1, 1.5]} gl={{ antialias: true, alpha: false, powerPreference: "high-performance" }} fallback={<div className="game-load-state" role="alert">This map needs a browser with WebGL enabled.</div>}>
+      <Canvas camera={{ position: [3100, 5800, 5300], fov: 42, near: 2, far: 30000 }} dpr={[1, 1.25]} gl={{ antialias: true, alpha: false, powerPreference: "high-performance" }} fallback={<div className="game-load-state" role="alert">This map needs a browser with WebGL enabled.</div>}>
         <Scene data={loaded.data} built={loaded.built} reports={reports} focus={focus} reducedMotion={reducedMotion} theme={theme} />
       </Canvas>
     </SceneBoundary> : <div className="game-load-state" role={error ? "alert" : "status"}>

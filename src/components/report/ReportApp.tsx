@@ -18,6 +18,21 @@ type Screen = "home" | "capture" | "scan" | "tracker" | "badges" | "board";
 
 const HACKNEY_BOUNDS = { minLat: 51.517, maxLat: 51.578, minLng: -0.107, maxLng: -0.014 };
 
+/** Phone photos are 3-5MB; the classifier only needs ~1024px. Shrinks to JPEG before upload. */
+async function shrink(file: File, max = 1024): Promise<Blob> {
+  try {
+    const bitmap = await createImageBitmap(file);
+    const scale = Math.min(1, max / Math.max(bitmap.width, bitmap.height));
+    const canvas = document.createElement("canvas");
+    canvas.width = Math.round(bitmap.width * scale);
+    canvas.height = Math.round(bitmap.height * scale);
+    canvas.getContext("2d")!.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+    return await new Promise((resolve) => canvas.toBlob((b) => resolve(b ?? file), "image/jpeg", 0.82));
+  } catch {
+    return file;
+  }
+}
+
 function metres(a: LatLng, b: LatLng) {
   const dLat = (b.lat - a.lat) * 111_320;
   const dLng = (b.lng - a.lng) * 111_320 * Math.cos((a.lat * Math.PI) / 180);
@@ -105,12 +120,12 @@ export function ReportApp() {
       setScreen("scan");
       setFocus({ ...location });
       const form = new FormData();
-      form.append("photo", file);
+      form.append("photo", await shrink(file), "photo.jpg");
       form.append("lat", String(location.lat));
       form.append("lng", String(location.lng));
       try {
         // Keep the scan on screen long enough to read, even when the model is fast.
-        const [res] = await Promise.all([fetch("/api/classify", { method: "POST", body: form }), new Promise((r) => setTimeout(r, 2200))]);
+        const [res] = await Promise.all([fetch("/api/classify", { method: "POST", body: form }), new Promise((r) => setTimeout(r, 1200))]);
         if (!res.ok) throw new Error();
         setClassification((await res.json()) as Classification);
       } catch {

@@ -1,6 +1,6 @@
 "use client";
 
-import { Environment, Float } from "@react-three/drei";
+import { Float } from "@react-three/drei";
 import { Canvas, useFrame } from "@react-three/fiber";
 import { useMemo, useRef } from "react";
 import * as THREE from "three";
@@ -138,11 +138,12 @@ function Rig({ kind, mood }: { kind: MascotKind; mood: MascotMood }) {
 export function Mascot({ kind, mood, className }: { kind: MascotKind; mood: MascotMood; className?: string }) {
   return (
     <div className={className}>
-      <Canvas camera={{ position: [0, 0.2, 4.2], fov: 32 }} dpr={[1, 2]} gl={{ alpha: true, antialias: true }}>
+      <Canvas camera={{ position: [0, 0.2, 4.2], fov: 32 }} dpr={[1, 1.5]} gl={{ alpha: true, antialias: true, powerPreference: "low-power" }}>
         <ambientLight intensity={0.5} />
         <directionalLight position={[-3, 4, 5]} intensity={2.2} />
         <directionalLight position={[3, 1, -3]} intensity={1.2} color="#bfe6d6" />
-        <Environment preset="city" />
+        {/* Lights only: an HDR environment meant a 1-2s CDN download per mascot. */}
+        <hemisphereLight args={["#ffffff", "#9fb8ad", 1.1]} />
         <Float speed={mood === "happy" ? 0 : 1.4} rotationIntensity={0.15} floatIntensity={0.4}>
           <Rig kind={kind} mood={mood} />
         </Float>
