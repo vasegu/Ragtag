@@ -44,3 +44,13 @@ next-env.d.ts
 # harvest: each source keeps its own data/ (regenerable); venv is shared at harvest/.venv
 /harvest/*/data
 __pycache__/
+*.sqlite
+*.sqlite-journal
+
+# python virtualenvs (anywhere)
+.venv/
+venv/
+
+# supabase CLI local state
+/supabase/.temp/
+/supabase/.branches/
