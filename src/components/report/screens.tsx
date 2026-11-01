@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { BADGES, type BadgeId, type Player, RING_GOALS, type Reward, WARDS, levelFor } from "@/lib/report/game";
 import { CATEGORY_META, type Classification, type QueueInfo, type Report } from "@/lib/report/types";
 import { buildTrack } from "@/lib/report/track";
@@ -174,17 +174,16 @@ export function HomeScreen({
 /* --------------------------------- Capture -------------------------------- */
 
 export function CaptureScreen({ address, onPhoto, onBack }: { address: string; onPhoto: (file: File, preview: string) => void; onBack: () => void }) {
-  const [demos, setDemos] = useState<string[]>([]);
+  const demos = DEMO_PHOTOS;
+  const blobs = useRef(new Map<string, Promise<Blob>>());
 
   useEffect(() => {
-    // Only offer demo photos that exist (Astra renders them into public/renders/demo).
-    Promise.all(DEMO_PHOTOS.map(async (d) => ((await fetch(`/renders/demo/${d}.jpg`, { method: "HEAD" })).ok ? d : null))).then((r) =>
-      setDemos(r.filter(Boolean) as string[]),
-    );
+    // Fetch the demo photos as soon as the screen opens so a tap starts the scan instantly.
+    for (const d of DEMO_PHOTOS) blobs.current.set(d, fetch(`/renders/demo/${d}.jpg`).then((r) => r.blob()));
   }, []);
 
   const pickDemo = async (name: string) => {
-    const blob = await (await fetch(`/renders/demo/${name}.jpg`)).blob();
+    const blob = await (blobs.current.get(name) ?? fetch(`/renders/demo/${name}.jpg`).then((r) => r.blob()));
     onPhoto(new File([blob], `${name}.jpg`, { type: "image/jpeg" }), URL.createObjectURL(blob));
   };
 

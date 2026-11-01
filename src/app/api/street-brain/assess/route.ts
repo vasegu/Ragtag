@@ -11,8 +11,9 @@ const requests=new Map<string,{n:number;until:number}>();
 export async function POST(request:Request){
   try{
     const ip=request.headers.get('x-forwarded-for')?.split(',')[0]??'local',previous=requests.get(ip),now=Date.now();
-    if(previous&&previous.until>now&&previous.n>=6)throw new AppError(429,'You have made several assessments. Please wait ten minutes before trying again.');
-    requests.set(ip,{n:previous&&previous.until>now?previous.n+1:1,until:now+600000});
+    // Generous for demos on shared venue wifi: 30 per fixed 10 minute window, and blocked attempts don't extend it.
+    if(previous&&previous.until>now&&previous.n>=30)throw new AppError(429,'You have made several assessments. Please wait a few minutes before trying again.');
+    requests.set(ip,previous&&previous.until>now?{n:previous.n+1,until:previous.until}:{n:1,until:now+600000});
     if(Number(request.headers.get('content-length')??0)>4000000)throw new AppError(413,'The photo upload is too large. Please choose fewer photos.');
     let form:FormData;try{form=await request.formData();}catch{throw new AppError(400,'The photo upload could not be read. Choose the photos again.');}
     const address=form.get('address'),description=form.get('description'),files=form.getAll('photos');

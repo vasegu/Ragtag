@@ -57,3 +57,4 @@ venv/
 
 # ingest cache
 /data/
+demo/

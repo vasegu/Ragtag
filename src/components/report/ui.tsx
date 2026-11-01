@@ -96,7 +96,7 @@ export function CategoryIcon({ category, size = 44 }: { category: Category; size
     );
   return (
     // eslint-disable-next-line @next/next/no-img-element
-    <img src={`/renders/icons/${category}.png`} alt={meta.label} width={size} height={size} className="shrink-0 drop-shadow-sm" onError={() => setFailed(true)} />
+    <img src={`/renders/icons/${category}.webp`} alt={meta.label} width={size} height={size} className="shrink-0 drop-shadow-sm" onError={() => setFailed(true)} />
   );
 }
 

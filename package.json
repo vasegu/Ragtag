@@ -12,7 +12,8 @@
     "ingest:load": "tsx harvest/docs/load.ts",
     "ingest:eval": "tsx harvest/docs/eval/run.ts",
     "test:street-brain": "node --test src/features/street-brain/*.test.mjs",
-    "test:council": "tsx --test src/lib/council/plan.test.ts"
+    "test:council": "tsx --test src/lib/council/plan.test.ts",
+    "warmup": "node scripts/warmup.mjs"
   },
   "dependencies": {
     "@openai/agents": "^0.21.0",

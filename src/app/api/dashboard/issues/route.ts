@@ -23,6 +23,6 @@ export async function GET(request: Request) {
     const rows = (data ?? []) as unknown as Record<string, unknown>[];
     const mapped = rows.map(row => source === "reports" ? fromReport(row, url) : fromWorkOrder(row));
     const projected = source === "reports" ? await publishedProposals(mapped) : { issues: mapped };
-    return Response.json({ ...projected, total: count, hasMore: offset + rows.length < count, nextOffset: offset + rows.length, source }, { headers: { "cache-control": "no-store" } });
+    return Response.json({ ...projected, total: count, hasMore: offset + rows.length < count, nextOffset: offset + rows.length, source }, { headers: { "cache-control": "public, s-maxage=30, stale-while-revalidate=600" } });
   } catch { return Response.json({ error: "Public report service is unavailable. Please retry." }, { status: 503 }); }
 }
