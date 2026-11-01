@@ -26,6 +26,7 @@ export function useVoice() {
   const [speaking, setSpeaking] = useState(false);
   const [searching, setSearching] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [muted, setMuted] = useState(false);
   const session = useRef<RealtimeSession | null>(null);
   /** Live loudness 0-1 (the agent's voice while it speaks, otherwise the mic). Read every frame, no re-renders. */
   const level = useRef(0);
@@ -130,11 +131,20 @@ export function useVoice() {
     }
   }, []);
 
+  const toggleMute = useCallback(() => {
+    const s = session.current;
+    if (!s) return;
+    const next = !muted;
+    s.mute(next);
+    setMuted(next);
+  }, [muted]);
+
   const stop = useCallback(() => {
     session.current?.close();
     session.current = null;
     releaseAudio();
     speakingRef.current = false;
+    setMuted(false);
     setSpeaking(false);
     setSearching(null);
     setStatus("idle");
@@ -148,7 +158,7 @@ export function useVoice() {
     [],
   );
 
-  return { status, lines, sources, speaking, searching, error, level, start, stop };
+  return { status, lines, sources, speaking, searching, error, level, muted, start, stop, toggleMute };
 }
 
 function toLines(history: RealtimeItem[]): VoiceLine[] {

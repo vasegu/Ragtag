@@ -56,6 +56,7 @@ export function ReportApp() {
   const [tab, setTab] = useState<Tab>("home");
   // A question started from Home (search bar or quick tile), sent when the Ask tab opens.
   const [askSeed, setAskSeed] = useState<string | null>(null);
+  const [voiceRequest, setVoiceRequest] = useState(0);
   const [reports, setReports] = useState<Report[]>([]);
   const [location, setLocation] = useState<LatLng>(DEMO_LOCATION);
   const [address, setAddress] = useState("London Fields, Hackney E8");
@@ -204,7 +205,7 @@ export function ReportApp() {
   };
 
   return (
-    <div className={`relative h-dvh w-full overflow-hidden ${theme === "day" ? "bg-[#cfe0ee]" : "bg-[#0b1020]"}`}>
+    <div className={`relative h-dvh w-full overflow-hidden ${theme === "day" ? "bg-canvas" : "bg-[#141a24]"}`}>
       <div className={`absolute inset-0 ${isPhone ? "hidden" : ""}`}>
         {mapStyle !== "game" ? (
           <NightMap
@@ -315,12 +316,16 @@ export function ReportApp() {
                 active={active}
                 quests={quests}
                 onAsk={ask}
+                onVoice={() => {
+                  setVoiceRequest((n) => n + 1);
+                  setTab("ask");
+                }}
                 onReport={() => setScreen("capture")}
                 onOpen={(r) => (submitted && r.id === submitted.id ? setScreen("tracker") : openReport(r))}
                 onTab={setTab}
               />
             )}
-            {screen === "tabs" && tab === "ask" && <AskTab initial={askSeed} mascot={mascot} onReport={() => setScreen("capture")} />}
+            {screen === "tabs" && tab === "ask" && <AskTab initial={askSeed} voiceRequest={voiceRequest} mascot={mascot} onReport={() => setScreen("capture")} />}
             {screen === "tabs" && tab === "nearby" && <NearbyTab reports={nearby} onOpen={openReport} />}
             {screen === "tabs" && tab === "me" && (
               <HomeScreen

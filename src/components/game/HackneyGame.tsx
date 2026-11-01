@@ -78,7 +78,7 @@ const PALETTE = {
     windows: 1, outline: "#0d1220", stars: true, label: "#a4e4c7", labelShadow: "#001e18",
   },
   day: {
-    skyLow: "0.86,0.92,0.97", skyHigh: "0.47,0.69,0.92", fog: "#d8e2ea", ground: "#b9b4a7", bg: "#cfe0ee",
+    skyLow: "0.86,0.92,0.97", skyHigh: "0.47,0.69,0.92", fog: "#d8e2ea", ground: "#b9b4a7", bg: "#f3f3f0",
     hemi: ["#fffaf0", "#7d776c", 1.15] as [string, string, number], sun: ["#ffe9c9", 1.9] as [string, number], rim: ["#bfe6ff", 0.6] as [string, number],
     road: "#6f6e6b", roadOpacity: 0.85, park: "#86b86c",
     windows: 0, outline: "#4a3a33", stars: false, label: "#00664f", labelShadow: "#ffffff",

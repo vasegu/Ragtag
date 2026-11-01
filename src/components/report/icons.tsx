@@ -112,3 +112,8 @@ export const IconMic = (p: IconProps) => (
     <path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21M8.5 21h7" />
   </Icon>
 );
+export const IconMicOff = (p: IconProps) => (
+  <Icon {...p}>
+    <path d="M15 10V6a3 3 0 0 0-5.7-1.3M9 9v2a3 3 0 0 0 4.6 2.5M5.5 11a6.5 6.5 0 0 0 10.4 5.2M18.5 11a6.4 6.4 0 0 1-.6 2.7M12 17.5V21M8.5 21h7M3 3l18 18" />
+  </Icon>
+);

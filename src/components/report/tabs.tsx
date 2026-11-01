@@ -8,7 +8,7 @@ import { type Player, levelFor } from "@/lib/report/game";
 import type { Track } from "@/lib/report/track";
 import { CATEGORY_META, type Report } from "@/lib/report/types";
 import { Mascot, type MascotKind } from "./Mascot";
-import { IconBin, IconCamera, IconChat, IconHome, IconMic, IconParking, IconPin, IconPound, IconSearch, IconUser, IconWrench } from "./icons";
+import { IconBin, IconCamera, IconChat, IconHome, IconMic, IconMicOff, IconParking, IconPin, IconPound, IconSearch, IconUser, IconWrench } from "./icons";
 import { CategoryIcon, Flame, Label } from "./ui";
 
 export type Tab = "home" | "ask" | "nearby" | "me";
@@ -58,6 +58,7 @@ export function FrontDoor({
   active,
   quests,
   onAsk,
+  onVoice,
   onReport,
   onOpen,
   onTab,
@@ -67,6 +68,7 @@ export function FrontDoor({
   active: { report: Report; track: Track } | null;
   quests: (Report & { distance: number })[];
   onAsk: (q?: string) => void;
+  onVoice: () => void;
   onReport: () => void;
   onOpen: (r: Report) => void;
   onTab: (t: Tab) => void;
@@ -90,11 +92,16 @@ export function FrontDoor({
         </button>
       </div>
 
-      <button onClick={() => onAsk()} className="flex w-full items-center gap-3 rounded-[22px] bg-card px-4 py-3.5 text-left shadow-card ring-1 ring-line transition active:scale-[0.99]">
-        <IconSearch className="h-5 w-5 text-hackney" />
-        <span className="flex-1 text-[15.5px] text-muted">Ask the council anything…</span>
-        <span className="rounded-full bg-canvas px-2 py-0.5 font-mono text-[10px] text-muted">Any language</span>
-      </button>
+      <div className="flex w-full items-center gap-2 rounded-[22px] bg-card py-1.5 pl-4 pr-1.5 shadow-card ring-1 ring-line">
+        <button onClick={() => onAsk()} className="flex min-w-0 flex-1 items-center gap-3 py-2 text-left">
+          <IconSearch className="h-5 w-5 shrink-0 text-hackney" />
+          <span className="flex-1 truncate text-[15.5px] text-muted">Ask the council anything…</span>
+          <span className="shrink-0 rounded-full bg-canvas px-2 py-0.5 font-mono text-[10px] text-muted">Any language</span>
+        </button>
+        <button onClick={onVoice} aria-label="Talk to One Hackney" className="glass-orb grid h-10 w-10 shrink-0 place-items-center rounded-full text-white transition active:scale-95">
+          <IconMic className="h-5 w-5" />
+        </button>
+      </div>
 
       <button
         onClick={onReport}
@@ -175,9 +182,28 @@ export function FrontDoor({
 
 const STREET_AREAS = ["bins-and-recycling", "streets-and-roads", "parking", "environmental-health-and-noise", "community-safety"];
 
-export function AskTab({ initial, mascot, onReport }: { initial: string | null; mascot: MascotKind; onReport: () => void }) {
+export function AskTab({
+  initial,
+  voiceRequest,
+  mascot,
+  onReport,
+}: {
+  initial: string | null;
+  /** Bumped by the Home mic button to open straight into live voice. */
+  voiceRequest: number;
+  mascot: MascotKind;
+  onReport: () => void;
+}) {
   const { turns, busy, send } = useAsk();
   const voice = useVoice();
+  const handledVoice = useRef(0);
+  const { start: startVoice } = voice;
+  useEffect(() => {
+    if (voiceRequest > handledVoice.current) {
+      handledVoice.current = voiceRequest;
+      startVoice();
+    }
+  }, [voiceRequest, startVoice]);
   const [draft, setDraft] = useState("");
   const sentInitial = useRef<string | null>(null);
   const end = useRef<HTMLDivElement>(null);
@@ -188,8 +214,10 @@ export function AskTab({ initial, mascot, onReport }: { initial: string | null; 
       send(initial);
     }
   }, [initial, send]);
+  const list = useRef<HTMLDivElement>(null);
+  const followBottom = useRef(true);
   useEffect(() => {
-    end.current?.scrollIntoView({ behavior: "smooth", block: "end" });
+    if (followBottom.current) end.current?.scrollIntoView({ behavior: "smooth", block: "end" });
   }, [turns]);
 
   const submit = () => {
@@ -200,7 +228,14 @@ export function AskTab({ initial, mascot, onReport }: { initial: string | null; 
 
   return (
     <div className="flex h-full flex-col">
-      <div className="flex-1 space-y-3 overflow-y-auto px-4 pb-44 pt-1">
+      <div
+        ref={list}
+        onScroll={(e) => {
+          const el = e.currentTarget;
+          followBottom.current = el.scrollHeight - el.scrollTop - el.clientHeight < 120;
+        }}
+        className="min-h-0 flex-1 space-y-3 overflow-y-auto overscroll-contain px-4 pb-44 pt-1"
+      >
         {turns.length === 0 && (
           <div className="pt-6 text-center">
             <p className="text-[24px] font-semibold tracking-[-0.02em]">Ask the council</p>
@@ -250,11 +285,13 @@ function LiveVoice({ voice, mascot, onReport }: { voice: ReturnType<typeof useVo
       ? "Connecting…"
       : voice.status === "error"
         ? (voice.error ?? "Voice failed to start")
-        : voice.searching
-          ? `Searching Hackney: ${voice.searching}`
-          : voice.speaking
-            ? "Speaking"
-            : "Listening. Ask anything, in any language";
+        : voice.muted
+          ? "Muted. Tap the mic to talk again"
+          : voice.searching
+            ? `Searching Hackney: ${voice.searching}`
+            : voice.speaking
+              ? "Speaking"
+              : "Listening. Ask anything, in any language";
   return (
     <div className="absolute inset-0 z-40 flex flex-col bg-gradient-to-b from-[#eaf6f0] via-canvas to-canvas px-5 pb-28 pt-[58px]">
       <div className="flex items-center justify-between">
@@ -301,6 +338,15 @@ function LiveVoice({ voice, mascot, onReport }: { voice: ReturnType<typeof useVo
       <div className="mt-4 flex gap-2">
         <button onClick={onReport} className="liquid-glass flex h-12 flex-1 items-center justify-center gap-2 rounded-full text-[14px] font-semibold text-ink">
           <IconCamera className="h-5 w-5" /> Report
+        </button>
+        <button
+          onClick={voice.toggleMute}
+          disabled={voice.status !== "live"}
+          aria-pressed={voice.muted}
+          aria-label={voice.muted ? "Unmute microphone" : "Mute microphone"}
+          className={`grid h-12 w-12 shrink-0 place-items-center rounded-full transition disabled:opacity-40 ${voice.muted ? "bg-ink text-white" : "liquid-glass text-ink"}`}
+        >
+          {voice.muted ? <IconMicOff className="h-5 w-5" /> : <IconMic className="h-5 w-5" />}
         </button>
         <button onClick={voice.stop} className="h-12 flex-1 rounded-full bg-[#e5484d] text-[14px] font-semibold text-white shadow-card-hover">
           End
