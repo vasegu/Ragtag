@@ -86,6 +86,8 @@ export function HomeScreen({
         <span className="text-[22px] text-white/50 transition group-hover:translate-x-1">→</span>
       </button>
 
+      <PunchCard count={player.reports.length} />
+
       <Card className="flex items-center gap-4">
         <Rings
           values={[
@@ -802,6 +804,46 @@ function DisputeSheet({
         </button>
         <p className="mt-2 text-center text-[11.5px] text-muted">Your report still goes through. A council officer sees your correction.</p>
       </div>
+    </div>
+  );
+}
+
+// Local reward: every 20 reports earns a free coffee at a partner café.
+const PUNCHES = 20;
+function PunchCard({ count }: { count: number }) {
+  const earned = Math.floor(count / PUNCHES);
+  const filled = count % PUNCHES;
+  const left = PUNCHES - filled;
+  return (
+    <div className="relative overflow-hidden rounded-[22px] bg-[#f6efe4] p-4 shadow-card">
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <p className="font-mono text-[10.5px] uppercase tracking-[0.14em] text-[#8a5a2b]">Hackney Coffee Club</p>
+          <p className="mt-0.5 text-[16px] font-semibold leading-snug tracking-[-0.01em] text-[#3b2716]">
+            {left === PUNCHES && earned ? "Coffee earned. Show this at the till." : `${left} more report${left === 1 ? "" : "s"} for a free coffee`}
+          </p>
+        </div>
+        <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-[#3b2716] text-[#f6efe4]">
+          <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <path d="M5 9h11v5a5 5 0 01-5 5h-1a5 5 0 01-5-5zM16 10h1.5a2.5 2.5 0 010 5H16M8 3.5c0 1 1 1.5 1 2.5M12 3.5c0 1 1 1.5 1 2.5" />
+          </svg>
+        </span>
+      </div>
+      <div className="mt-3 grid grid-cols-10 gap-1.5" role="img" aria-label={`${filled} of ${PUNCHES} punches`}>
+        {Array.from({ length: PUNCHES }, (_, i) => (
+          <span
+            key={i}
+            className={`grid aspect-square place-items-center rounded-full border-[1.5px] ${i < filled ? "border-[#3b2716] bg-[#3b2716] text-[#f6efe4]" : "border-dashed border-[#c9ab88] text-transparent"}`}
+          >
+            <svg viewBox="0 0 24 24" className="h-3 w-3" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <path d="M6 12.5l4 4 8-9" />
+            </svg>
+          </span>
+        ))}
+      </div>
+      <p className="mt-3 text-[11.5px] text-[#8a5a2b]">
+        Redeem at independent partner cafés across the borough{earned ? ` · ${earned} coffee${earned === 1 ? "" : "s"} earned so far` : ""}
+      </p>
     </div>
   );
 }
