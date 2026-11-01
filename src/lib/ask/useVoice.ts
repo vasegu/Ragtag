@@ -75,7 +75,7 @@ export function useVoice() {
     level.current = 0;
   };
 
-  const start = useCallback(async () => {
+  const start = useCallback(async (context: { role: "user" | "assistant"; text: string }[] = []) => {
     if (session.current) return;
     setStatus("connecting");
     setError(null);
@@ -142,7 +142,12 @@ export function useVoice() {
         },
       });
 
-      const agent = new RealtimeAgent({ name: "One Hackney", instructions: INSTRUCTIONS, tools: [searchHackney] });
+      // Carry on from the text chat: the last few exchanges go into the instructions.
+      const recent = context.slice(-8).map((l) => `${l.role === "user" ? "Resident" : "You"}: ${l.text.replace(/\[\d+\]/g, "").slice(0, 600)}`);
+      const instructions = recent.length
+        ? `${INSTRUCTIONS}\n\nThe resident was just typing to you and switched to voice. Continue the same conversation; don't greet them again or repeat what you already said.\nConversation so far:\n${recent.join("\n")}`
+        : INSTRUCTIONS;
+      const agent = new RealtimeAgent({ name: "One Hackney", instructions, tools: [searchHackney] });
       const s = new RealtimeSession(agent, { model, transport: new OpenAIRealtimeWebRTC({ mediaStream: mic, audioElement }) });
       s.on("history_updated", (history: RealtimeItem[]) => setLines(toLines(history)));
       s.on("audio_start", () => {

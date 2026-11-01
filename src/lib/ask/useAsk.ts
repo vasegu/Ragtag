@@ -105,10 +105,31 @@ export function useAsk({ mock = false } = {}) {
     [busy, mock],
   );
 
+  /** Add exchanges that happened elsewhere (live voice) so text chat continues from them. */
+  const importTurns = useCallback((lines: { role: "user" | "assistant"; text: string }[]) => {
+    if (!lines.length) return;
+    setTurns((t) => [
+      ...t,
+      ...lines.map((l): Turn =>
+        l.role === "user"
+          ? { id: id(), role: "user", text: l.text }
+          : { id: id(), role: "assistant", text: l.text, searches: [], sources: [], status: "done" },
+      ),
+    ]);
+    history.current = [
+      ...history.current,
+      ...lines.map((l) =>
+        l.role === "user"
+          ? { role: "user", content: l.text }
+          : { role: "assistant", status: "completed", content: [{ type: "output_text", text: l.text }] },
+      ),
+    ];
+  }, []);
+
   const reset = useCallback(() => {
     history.current = [];
     setTurns([]);
   }, []);
 
-  return { turns, busy, send, reset };
+  return { turns, busy, send, reset, importTurns };
 }

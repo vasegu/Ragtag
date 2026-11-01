@@ -223,10 +223,20 @@ export function AskTab({
   mascot: MascotKind;
   onReport: () => void;
 }) {
-  const { turns, busy, send } = useAsk();
+  const { turns, busy, send, importTurns } = useAsk();
   const voice = useVoice();
   const handledVoice = useRef(0);
-  const { start: startVoice } = voice;
+  const { start: startVoice, stop: stopVoice } = voice;
+
+  // The conversation so far, as plain text, to hand to voice so it continues rather than restarts.
+  const textContext = () =>
+    turns.filter((t) => t.text.trim()).map((t) => ({ role: t.role, text: t.text }));
+  const beginVoice = () => startVoice(textContext());
+  const endVoice = () => {
+    importTurns(voice.lines.map((l) => ({ role: l.role, text: l.text })));
+    stopVoice();
+  };
+
   useEffect(() => {
     if (voiceRequest > handledVoice.current) {
       handledVoice.current = voiceRequest;
@@ -247,13 +257,14 @@ export function AskTab({
   const followBottom = useRef(true);
   useEffect(() => {
     if (followBottom.current) end.current?.scrollIntoView({ behavior: "smooth", block: "end" });
-  }, [turns]);
+  }, [turns, voice.lines]);
 
   const submit = () => {
     if (!draft.trim() || busy) return;
     send(draft);
     setDraft("");
   };
+  const voiceOn = voice.status !== "idle";
 
   return (
     <div className="flex h-full flex-col">
@@ -265,7 +276,7 @@ export function AskTab({
         }}
         className="min-h-0 flex-1 space-y-3 overflow-y-auto overscroll-contain px-4 pb-44 pt-1"
       >
-        {turns.length === 0 && (
+        {turns.length === 0 && !voiceOn && (
           <div className="pt-6 text-center">
             <p className="text-[24px] font-semibold tracking-[-0.02em]">Ask the council</p>
             <p className="mx-auto mt-1 max-w-[270px] text-[13.5px] text-muted">Answers from Hackney&apos;s own pages, with sources. Any language. No phone queue.</p>
@@ -279,82 +290,22 @@ export function AskTab({
           </div>
         )}
         {turns.map((t) => (t.role === "user" ? <UserMsg key={t.id} text={t.text} /> : <AssistantMsg key={t.id} turn={t} onReport={onReport} />))}
-        <div ref={end} />
-      </div>
-      <form
-        onSubmit={(e) => {
-          e.preventDefault();
-          submit();
-        }}
-        className="absolute inset-x-3 bottom-[88px] z-20 flex items-center gap-2 rounded-full bg-card p-1.5 pl-4 shadow-card-hover ring-1 ring-line"
-      >
-        <button
-          type="button"
-          onClick={voice.start}
-          aria-label="Talk to One Hackney"
-          className="-ml-2.5 grid h-10 w-10 shrink-0 place-items-center rounded-full text-hackney transition hover:bg-hackney-tint"
-        >
-          <IconMic className="h-[22px] w-[22px]" />
-        </button>
-        <input value={draft} onChange={(e) => setDraft(e.target.value)} placeholder="Ask anything…" aria-label="Your question" className="min-w-0 flex-1 bg-transparent text-[15px] outline-none placeholder:text-muted" />
-        <button type="submit" disabled={busy || !draft.trim()} className="h-10 rounded-full bg-ink px-4 text-[14px] font-semibold text-white disabled:bg-ink/25">
-          {busy ? "…" : "Ask"}
-        </button>
-      </form>
-      {voice.status !== "idle" && <LiveVoice voice={voice} mascot={mascot} onReport={onReport} />}
-    </div>
-  );
-}
-
-/** Full-screen live voice mode: a liquid glass orb, live transcript and the pages it used. */
-function LiveVoice({ voice, mascot, onReport }: { voice: ReturnType<typeof useVoice>; mascot: MascotKind; onReport: () => void }) {
-  const last = voice.lines.slice(-4);
-  const state =
-    voice.status === "connecting"
-      ? "Connecting…"
-      : voice.status === "error"
-        ? (voice.error ?? "Voice failed to start")
-        : voice.muted
-          ? "Muted. Tap the mic to talk again"
-          : voice.searching
-            ? `Searching Hackney: ${voice.searching}`
-            : voice.speaking
-              ? "Speaking"
-              : "Listening. Ask anything, in any language";
-  return (
-    <div className="absolute inset-0 z-40 flex flex-col bg-gradient-to-b from-[#eaf6f0] via-canvas to-canvas px-5 pb-28 pt-[58px]">
-      <div className="flex items-center justify-between">
-        <Label>One Hackney · Live</Label>
-        <span className="flex items-center gap-1.5 rounded-full bg-card px-2.5 py-1 font-mono text-[10px] uppercase tracking-[0.1em] text-hackney shadow-card">
-          <span className={`h-1.5 w-1.5 rounded-full ${voice.status === "live" ? "animate-pulse bg-hackney-bright" : "bg-muted"}`} />
-          {voice.status === "live" ? "On air" : voice.status}
-        </span>
-      </div>
-
-      <div className="flex flex-1 flex-col items-center justify-center">
-        <div className="relative">
-          <span className={`absolute inset-6 rounded-full bg-hackney-bright/25 blur-2xl transition-opacity ${voice.speaking ? "opacity-100" : "opacity-40"}`} />
-          <Mascot
-            kind={mascot}
-            mood={voice.speaking ? "talking" : voice.searching ? "scanning" : voice.status === "live" ? "listening" : "idle"}
-            level={voice.level}
-            className="relative h-[240px] w-[240px]"
-          />
-        </div>
-        <p className="mt-8 max-w-[280px] text-center text-[15px] font-medium text-ink">{state}</p>
-      </div>
-
-      <div className="space-y-2">
-        {last.map((l) => (
-          <p
-            key={l.id}
-            className={`pop-in rounded-[18px] px-3.5 py-2 text-[13.5px] leading-snug ${l.role === "user" ? "ml-8 bg-ink text-white" : "mr-8 bg-card shadow-card"}`}
-          >
-            {l.text}
-          </p>
-        ))}
-        {voice.sources.length > 0 && (
-          <div className="flex flex-wrap gap-1.5 pt-1">
+        {/* Live voice continues in the same thread. */}
+        {voiceOn &&
+          voice.lines.map((l) =>
+            l.role === "user" ? (
+              <UserMsg key={l.id} text={l.text} voice />
+            ) : (
+              <div key={l.id} className="pop-in rounded-[22px] bg-card p-4 text-[14.5px] leading-[1.55] shadow-card">
+                <p className="mb-1.5 flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-[0.12em] text-hackney">
+                  <IconMic className="h-3 w-3" /> Spoken
+                </p>
+                {l.text}
+              </div>
+            ),
+          )}
+        {voiceOn && voice.sources.length > 0 && (
+          <div className="flex flex-wrap gap-1.5">
             {voice.sources.slice(-3).map((src) => (
               <a key={src.url} href={src.url} target="_blank" rel="noreferrer" className="max-w-full truncate rounded-full bg-card px-2.5 py-1 text-[11.5px] shadow-card hover:bg-hackney-tint">
                 {src.title}
@@ -362,33 +313,89 @@ function LiveVoice({ voice, mascot, onReport }: { voice: ReturnType<typeof useVo
             ))}
           </div>
         )}
+        <div ref={end} />
       </div>
 
-      <div className="mt-4 flex gap-2">
-        <button onClick={onReport} className="liquid-glass flex h-12 flex-1 items-center justify-center gap-2 rounded-full text-[14px] font-semibold text-ink">
-          <IconCamera className="h-5 w-5" /> Report
-        </button>
-        <button
-          onClick={voice.toggleMute}
-          disabled={voice.status !== "live"}
-          aria-pressed={voice.muted}
-          aria-label={voice.muted ? "Unmute microphone" : "Mute microphone"}
-          className={`grid h-12 w-12 shrink-0 place-items-center rounded-full transition disabled:opacity-40 ${voice.muted ? "bg-ink text-white" : "liquid-glass text-ink"}`}
+      {voiceOn ? (
+        <VoiceDock voice={voice} mascot={mascot} onEnd={endVoice} />
+      ) : (
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            submit();
+          }}
+          className="absolute inset-x-3 bottom-[88px] z-20 flex items-center gap-2 rounded-full bg-card p-1.5 pl-4 shadow-card-hover ring-1 ring-line"
         >
-          {voice.muted ? <IconMicOff className="h-5 w-5" /> : <IconMic className="h-5 w-5" />}
-        </button>
-        <button onClick={voice.stop} className="h-12 flex-1 rounded-full bg-[#e5484d] text-[14px] font-semibold text-white shadow-card-hover">
-          End
-        </button>
-      </div>
+          <button
+            type="button"
+            onClick={beginVoice}
+            aria-label="Talk to One Hackney"
+            className="-ml-2.5 grid h-10 w-10 shrink-0 place-items-center rounded-full text-hackney transition hover:bg-hackney-tint"
+          >
+            <IconMic className="h-[22px] w-[22px]" />
+          </button>
+          <input value={draft} onChange={(e) => setDraft(e.target.value)} placeholder="Ask anything…" aria-label="Your question" className="min-w-0 flex-1 bg-transparent text-[15px] outline-none placeholder:text-muted" />
+          <button type="submit" disabled={busy || !draft.trim()} className="h-10 rounded-full bg-ink px-4 text-[14px] font-semibold text-white disabled:bg-ink/25">
+            {busy ? "…" : "Ask"}
+          </button>
+        </form>
+      )}
     </div>
   );
 }
 
-function UserMsg({ text }: { text: string }) {
+/** Inline live voice: a glass bar where the text box sits, with the mascot moving to the audio. */
+function VoiceDock({ voice, mascot, onEnd }: { voice: ReturnType<typeof useVoice>; mascot: MascotKind; onEnd: () => void }) {
+  const state =
+    voice.status === "connecting"
+      ? "Connecting…"
+      : voice.status === "error"
+        ? (voice.error ?? "Voice failed to start")
+        : voice.muted
+          ? "Muted"
+          : voice.searching
+            ? `Searching: ${voice.searching}`
+            : voice.speaking
+              ? "Speaking"
+              : "Listening…";
+  return (
+    <div className="liquid-glass absolute inset-x-3 bottom-[88px] z-20 flex items-center gap-2 rounded-[28px] p-1.5 pl-1">
+      <Mascot
+        kind={mascot}
+        mood={voice.speaking ? "talking" : voice.searching ? "scanning" : voice.status === "live" ? "listening" : "idle"}
+        level={voice.level}
+        className="-my-3 h-[68px] w-[68px] shrink-0"
+      />
+      <div className="min-w-0 flex-1">
+        <p className="flex items-center gap-1.5 font-mono text-[9.5px] uppercase tracking-[0.12em] text-hackney">
+          <span className={`h-1.5 w-1.5 rounded-full ${voice.status === "live" && !voice.muted ? "animate-pulse bg-hackney-bright" : "bg-muted"}`} />
+          Live voice
+        </p>
+        <p className="truncate text-[14px] font-medium text-ink">{state}</p>
+      </div>
+      <button
+        onClick={voice.toggleMute}
+        disabled={voice.status !== "live"}
+        aria-pressed={voice.muted}
+        aria-label={voice.muted ? "Unmute microphone" : "Mute microphone"}
+        className={`grid h-10 w-10 shrink-0 place-items-center rounded-full transition disabled:opacity-40 ${voice.muted ? "bg-ink text-white" : "bg-white/70 text-ink"}`}
+      >
+        {voice.muted ? <IconMicOff className="h-5 w-5" /> : <IconMic className="h-5 w-5" />}
+      </button>
+      <button onClick={onEnd} className="h-10 shrink-0 rounded-full bg-[#e5484d] px-4 text-[13.5px] font-semibold text-white">
+        End
+      </button>
+    </div>
+  );
+}
+
+function UserMsg({ text, voice }: { text: string; voice?: boolean }) {
   return (
     <div className="flex justify-end">
-      <p className="max-w-[85%] rounded-[20px] rounded-br-[6px] bg-ink px-4 py-2.5 text-[14.5px] text-white">{text}</p>
+      <p className="max-w-[85%] rounded-[20px] rounded-br-[6px] bg-ink px-4 py-2.5 text-[14.5px] text-white">
+        {voice && <IconMic className="mb-0.5 mr-1.5 inline h-3.5 w-3.5 text-hackney-lime" />}
+        {text}
+      </p>
     </div>
   );
 }
