@@ -6,6 +6,10 @@ import { CATEGORY_META, type Classification, type QueueInfo, type Report } from 
 import { buildTrack } from "@/lib/report/track";
 import { Mascot, type MascotKind, type MascotMood } from "./Mascot";
 import { Timeline } from "./Timeline";
+import { DecisionTree } from "./DecisionTree";
+import { JobCard } from "./JobCard";
+import type { Decision } from "@/lib/report/pipeline";
+import type { WorkOrder } from "@/features/street-brain/contracts";
 import { IconTrophy } from "./icons";
 import { BadgeImage, Card, CategoryIcon, Flame, Label, Rings } from "./ui";
 
@@ -245,6 +249,7 @@ export function ScanScreen({
   onSubmit,
   onBack,
   submitting,
+  pipeline,
 }: {
   preview: string;
   mascot: MascotKind;
@@ -253,6 +258,7 @@ export function ScanScreen({
   onSubmit: () => void;
   onBack: () => void;
   submitting: boolean;
+  pipeline: { trace: Decision[] | null; running: boolean; error: string | null };
 }) {
   const [shown, setShown] = useState(0);
   const findings = classification
@@ -277,7 +283,7 @@ export function ScanScreen({
   return (
     <div className="flex h-full flex-col px-4 pb-6 pt-2">
       <TopNav title={classification ? "Got it" : "Looking closely…"} onBack={onBack} />
-      <div className="relative mt-3 aspect-[4/5] overflow-hidden rounded-[28px] bg-black shadow-card">
+      <div className="relative mt-3 h-52 shrink-0 overflow-hidden rounded-[28px] bg-black shadow-card">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src={preview} alt="Your photo" className={`h-full w-full object-cover transition duration-700 ${classification ? "" : "scale-[1.04] saturate-[0.85]"}`} />
         {!classification && !error && (
@@ -295,10 +301,10 @@ export function ScanScreen({
             {CATEGORY_META[classification.category].label} · {Math.round(classification.confidence * 100)}%
           </span>
         )}
-        <Mascot kind={mascot} mood={mood} className="absolute -bottom-3 -right-3 h-[120px] w-[120px]" />
+        <Mascot kind={mascot} mood={mood} className="absolute -bottom-4 -right-3 h-[104px] w-[104px]" />
       </div>
 
-      <div className="mt-3 flex-1 space-y-1.5 overflow-hidden">
+      <div className="mt-3 min-h-0 flex-1 space-y-1.5 overflow-y-auto pb-2">
         {error && <p className="rounded-[16px] bg-[#fdecea] p-3 text-[14px] text-[#b42318]">{error}</p>}
         {!classification && !error && (
           <p className="flex items-center gap-2 px-1 font-mono text-[12px] uppercase tracking-[0.12em] text-muted">
@@ -311,6 +317,11 @@ export function ScanScreen({
             <span className="text-[14px] font-medium">{f.v}</span>
           </div>
         ))}
+        {(pipeline.running || pipeline.trace || pipeline.error) && (
+          <div className="pt-1.5">
+            <DecisionTree trace={pipeline.trace} running={pipeline.running} error={pipeline.error} />
+          </div>
+        )}
       </div>
 
       <button
@@ -331,6 +342,7 @@ export function TrackerScreen({
   classification,
   report,
   all,
+  workOrder,
   mascot,
   reference,
   onDone,
@@ -339,6 +351,7 @@ export function TrackerScreen({
   classification: Classification;
   report: Report;
   all: Report[];
+  workOrder: WorkOrder | null;
   mascot: MascotKind;
   reference: string;
   onDone: () => void;
@@ -359,6 +372,8 @@ export function TrackerScreen({
         <Mascot kind={mascot} mood="idle" className="pointer-events-none absolute -right-5 -top-4 h-[96px] w-[96px]" />
         <Timeline track={track} />
       </Card>
+
+      {workOrder && <JobCard order={workOrder} reference={reference} address={report.title.split(", ").slice(1).join(", ") || report.title} />}
 
       <Card>
         <Label>Why you&apos;re here</Label>

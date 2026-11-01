@@ -13,6 +13,7 @@ import { IconMoon, IconSun } from "./icons";
 import { PhoneFrame, useIsPhone } from "./ui";
 import { buildTrack } from "@/lib/report/track";
 import { prepareVoice } from "@/lib/ask/useVoice";
+import { type PipelineResult, assessPhoto } from "@/lib/report/pipeline";
 
 const HackneyGame = dynamic(() => import("@/components/game/HackneyGame"), { ssr: false });
 
@@ -73,6 +74,8 @@ export function ReportApp() {
   const [submitted, setSubmitted] = useState<Report | null>(null);
   const [reward, setReward] = useState<Reward | null>(null);
   const [verifying, setVerifying] = useState<Report | null>(null);
+  // Santiago's street brain pipeline, run alongside the quick classifier.
+  const [pipeline, setPipeline] = useState<{ result: PipelineResult | null; running: boolean; error: string | null }>({ result: null, running: false, error: null });
   const [streakOpen, setStreakOpen] = useState(false);
 
   // Voice: get a key ready so the mic connects quickly.
@@ -137,8 +140,13 @@ export function ReportApp() {
       setScanError(null);
       setScreen("scan");
       setFocus({ ...location });
+      const small = await shrink(file);
+      setPipeline({ result: null, running: true, error: null });
+      assessPhoto(small, { address, description: "Photo report from One Hackney. Please assess what the photo shows.", lat: location.lat, lng: location.lng })
+        .then((result) => setPipeline({ result, running: false, error: null }))
+        .catch((e: Error) => setPipeline({ result: null, running: false, error: e.message }));
       const form = new FormData();
-      form.append("photo", await shrink(file), "photo.jpg");
+      form.append("photo", small, "photo.jpg");
       form.append("lat", String(location.lat));
       form.append("lng", String(location.lng));
       try {
@@ -150,7 +158,7 @@ export function ReportApp() {
         setScanError("We couldn't read that photo. Try another angle, or pick the category yourself.");
       }
     },
-    [location],
+    [location, address],
   );
 
   const submit = useCallback(async () => {
@@ -350,12 +358,13 @@ export function ReportApp() {
                 classification={classification}
                 error={scanError}
                 submitting={submitting}
+                pipeline={{ trace: pipeline.result?.trace ?? null, running: pipeline.running, error: pipeline.error }}
                 onSubmit={submit}
                 onBack={() => setScreen("capture")}
               />
             )}
             {screen === "tracker" && queue && classification && submitted && (
-              <TrackerScreen queue={queue} classification={classification} report={submitted} all={reports} mascot={mascot} reference={reference} onDone={home} />
+              <TrackerScreen queue={queue} classification={classification} report={submitted} all={reports} workOrder={pipeline.result?.workOrder ?? null} mascot={mascot} reference={reference} onDone={home} />
             )}
             {screen === "badges" && <BadgesScreen player={player} onBack={home} />}
             {screen === "board" && <BoardScreen player={player} onBack={home} />}
