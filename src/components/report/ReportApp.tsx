@@ -8,7 +8,7 @@ import { CATEGORY_META, type Classification, DEMO_LOCATION, type LatLng, type Qu
 import type { MascotKind } from "./Mascot";
 import { NightMap } from "./NightMap";
 import { BadgesScreen, BoardScreen, CaptureScreen, HomeScreen, RewardOverlay, ScanScreen, StreakSheet, TrackerScreen, VerifySheet } from "./screens";
-import { PhoneFrame } from "./ui";
+import { PhoneFrame, useIsPhone } from "./ui";
 
 const HackneyGame = dynamic(() => import("@/components/game/HackneyGame"), { ssr: false });
 
@@ -41,6 +41,7 @@ function metres(a: LatLng, b: LatLng) {
 
 export function ReportApp() {
   const { player, act, reset } = usePlayer();
+  const isPhone = useIsPhone();
   const [mascot, setMascot] = useState<MascotKind>("fields");
   const [mapStyle, setMapStyle] = useState<"mapbox" | "game">(HAS_MAPBOX ? "mapbox" : "game");
   // Day/night follows the clock by default (7am to 7pm is day); the panel can override it.
@@ -173,6 +174,11 @@ export function ReportApp() {
     setReward(act({ type: "verify" }));
   };
 
+  const openReport = (r: Report) => {
+    setFocus({ lat: r.lat, lng: r.lng });
+    setVerifying(r);
+  };
+
   const home = () => {
     setScreen("home");
     setFocus(null);
@@ -180,7 +186,7 @@ export function ReportApp() {
 
   return (
     <div className={`relative h-dvh w-full overflow-hidden ${theme === "day" ? "bg-[#cfe0ee]" : "bg-[#0b1020]"}`}>
-      <div className="absolute inset-0 hidden md:block">
+      <div className={`absolute inset-0 ${isPhone ? "hidden" : ""}`}>
         {mapStyle !== "game" ? (
           <NightMap
             reports={reports}
@@ -188,13 +194,18 @@ export function ReportApp() {
             dropped={dropped}
             questIds={questIds}
             theme={theme}
-            onSelect={(r) => {
-              setFocus({ lat: r.lat, lng: r.lng });
-              if (questIds.includes(r.id)) setVerifying(r);
-            }}
+            onSelect={openReport}
           />
         ) : (
-          <HackneyGame reports={reports} focus={focus} theme={theme} />
+          <HackneyGame
+            reports={reports}
+            focus={focus}
+            theme={theme}
+            onSelect={(id) => {
+              const r = reports.find((x) => x.id === id);
+              if (r) openReport(r);
+            }}
+          />
         )}
       </div>
 
@@ -272,9 +283,9 @@ export function ReportApp() {
         </div>
       </div>
 
-      <div className="pointer-events-none relative z-10 flex h-full items-center md:pl-10">
+      <div className={`pointer-events-none relative z-10 flex h-full items-center ${isPhone ? "" : "pl-5 md:pl-10"}`}>
         <PhoneFrame>
-          <div className="h-full overflow-y-auto pt-2 md:pt-[54px]">
+          <div className={`h-full overflow-y-auto ${isPhone ? "pt-2" : "pt-[54px]"}`}>
             {screen === "home" && (
               <HomeScreen
                 player={player}

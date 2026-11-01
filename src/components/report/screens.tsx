@@ -583,7 +583,10 @@ export function VerifySheet({ report, onAnswer, onClose }: { report: Report; onA
         <div className="flex items-center gap-3">
           <CategoryIcon category={report.category} size={52} />
           <div className="min-w-0">
-            <Label>Quest · +20 XP</Label>
+            <Label>
+              {CATEGORY_META[report.category].label} ·{" "}
+              {report.status === "fixed" ? "Fixed" : report.status === "scheduled" ? "Scheduled" : "Open · +20 XP to check"}
+            </Label>
             <p className="truncate text-[17px] font-semibold">{report.title}</p>
             <p className="text-[12.5px] text-muted">Reported {daysAgo(report.created_at)} · {report.confirmations} neighbours confirmed</p>
           </div>
@@ -592,15 +595,28 @@ export function VerifySheet({ report, onAnswer, onClose }: { report: Report; onA
           // eslint-disable-next-line @next/next/no-img-element
           <img src={report.photo_url} alt="Photo from the original report" className="mt-4 h-40 w-full rounded-[18px] object-cover" />
         )}
-        <p className="mt-4 text-[15px]">Is it still there? Your answer moves it up the queue, or closes it.</p>
-        <div className="mt-4 grid grid-cols-2 gap-2">
-          <button onClick={() => onAnswer("there")} className="h-12 rounded-full bg-ink text-[15px] font-semibold text-white">
-            Still there
-          </button>
-          <button onClick={() => onAnswer("fixed")} className="h-12 rounded-full bg-hackney-tint text-[15px] font-semibold text-hackney">
-            It&apos;s fixed
-          </button>
-        </div>
+        {report.status === "fixed" ? (
+          <>
+            <p className="mt-4 text-[15px]">
+              {CATEGORY_META[report.category].owner} marked this fixed. Thanks to everyone who reported it.
+            </p>
+            <button onClick={onClose} className="mt-4 h-12 w-full rounded-full bg-hackney-tint text-[15px] font-semibold text-hackney">
+              Close
+            </button>
+          </>
+        ) : (
+          <>
+            <p className="mt-4 text-[15px]">Is it still there? Your answer moves it up the queue, or closes it.</p>
+            <div className="mt-4 grid grid-cols-2 gap-2">
+              <button onClick={() => onAnswer("there")} className="h-12 rounded-full bg-ink text-[15px] font-semibold text-white">
+                Still there
+              </button>
+              <button onClick={() => onAnswer("fixed")} className="h-12 rounded-full bg-hackney-tint text-[15px] font-semibold text-hackney">
+                It&apos;s fixed
+              </button>
+            </div>
+          </>
+        )}
       </div>
     </div>
   );

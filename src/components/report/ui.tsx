@@ -1,16 +1,61 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { CATEGORY_META, type Category } from "@/lib/report/types";
 
-/** iPhone-style frame on desktop; on phones the app fills the screen. */
+// iPhone 15: 393x852 points, plus an 11px bezel each side.
+const SCREEN = { w: 393, h: 852 };
+const BEZEL = 11;
+const FRAME = { w: SCREEN.w + BEZEL * 2, h: SCREEN.h + BEZEL * 2 };
+
+/** True on an actual phone, where the app should fill the screen instead of sitting in a frame. */
+export function useIsPhone() {
+  const [phone, setPhone] = useState(false);
+  useEffect(() => {
+    const mq = window.matchMedia("(max-width: 500px) and (pointer: coarse)");
+    const update = () => setPhone(mq.matches);
+    update();
+    mq.addEventListener("change", update);
+    return () => mq.removeEventListener("change", update);
+  }, []);
+  return phone;
+}
+
+/**
+ * Always an iPhone 15-sized screen. On smaller windows the whole device scales down
+ * uniformly (never reflows), so the layout looks exactly as it would on the phone.
+ */
 export function PhoneFrame({ children }: { children: React.ReactNode }) {
-  return (
-    <div className="pointer-events-auto relative h-dvh w-full md:h-[min(860px,calc(100dvh-48px))] md:w-auto md:aspect-[390/844] md:rounded-[58px] md:bg-[#0b0b0c] md:p-[11px] md:shadow-[0_40px_120px_rgba(0,0,0,0.55),inset_0_0_0_2px_rgba(255,255,255,0.08)]">
-      <div className="relative h-full w-full overflow-hidden bg-canvas md:rounded-[47px]">
-        <div className="pointer-events-none absolute left-1/2 top-[11px] z-50 hidden h-[34px] w-[120px] -translate-x-1/2 rounded-full bg-black md:block" />
-        <StatusBar />
+  const phone = useIsPhone();
+  const [scale, setScale] = useState(1);
+
+  useEffect(() => {
+    const fit = () => setScale(Math.min(1, (window.innerHeight - 40) / FRAME.h, (window.innerWidth - 40) / FRAME.w));
+    fit();
+    window.addEventListener("resize", fit);
+    return () => window.removeEventListener("resize", fit);
+  }, []);
+
+  if (phone) {
+    return (
+      <div className="pointer-events-auto relative h-dvh w-full overflow-hidden bg-canvas">
         {children}
+      </div>
+    );
+  }
+
+  return (
+    // The outer box takes the scaled size so the page layout matches what's drawn.
+    <div className="pointer-events-auto relative shrink-0" style={{ width: FRAME.w * scale, height: FRAME.h * scale }}>
+      <div
+        className="absolute left-0 top-0 origin-top-left rounded-[58px] bg-[#0b0b0c] shadow-[0_40px_120px_rgba(0,0,0,0.55),inset_0_0_0_2px_rgba(255,255,255,0.08)]"
+        style={{ width: FRAME.w, height: FRAME.h, padding: BEZEL, transform: `scale(${scale})` }}
+      >
+        <div className="relative h-full w-full overflow-hidden rounded-[47px] bg-canvas">
+          <div className="pointer-events-none absolute left-1/2 top-[11px] z-50 h-[34px] w-[120px] -translate-x-1/2 rounded-full bg-black" />
+          <StatusBar />
+          {children}
+        </div>
       </div>
     </div>
   );
@@ -18,7 +63,7 @@ export function PhoneFrame({ children }: { children: React.ReactNode }) {
 
 function StatusBar() {
   return (
-    <div className="pointer-events-none absolute inset-x-0 top-0 z-40 hidden h-[54px] items-center justify-between px-8 pt-1 text-[15px] font-semibold text-ink md:flex">
+    <div className="pointer-events-none absolute inset-x-0 top-0 z-40 flex h-[54px] items-center justify-between px-8 pt-1 text-[15px] font-semibold text-ink">
       <span>12:41</span>
       <span className="flex items-center gap-1.5">
         <svg viewBox="0 0 18 12" className="h-3 w-[18px]" fill="currentColor">

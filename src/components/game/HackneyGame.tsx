@@ -18,6 +18,8 @@ export type HackneyGameProps = {
   onMapReady?: (data: GameMapData) => void;
   /** Day or night lighting. */
   theme?: GameTheme;
+  /** Called with a report id when its beacon is clicked. */
+  onSelect?: (id: string) => void;
 };
 const NO_REPORTS: GameReport[] = [];
 
@@ -151,7 +153,7 @@ function Sky({ theme }: { theme: GameTheme }) {
   </>;
 }
 
-function Scene({ data, built, reports, focus, reducedMotion, theme }: { data: GameMapData; built: SceneGeometry; reports: GameReport[]; focus: HackneyGameProps["focus"]; reducedMotion: boolean; theme: GameTheme }) {
+function Scene({ data, built, reports, focus, reducedMotion, theme, onSelect }: { data: GameMapData; built: SceneGeometry; reports: GameReport[]; focus: HackneyGameProps["focus"]; reducedMotion: boolean; theme: GameTheme; onSelect?: (id: string) => void }) {
   const palette = PALETTE[theme];
   const glow = useMemo(glowTexture, []);
   useEffect(() => () => glow.dispose(), [glow]);
@@ -162,7 +164,7 @@ function Scene({ data, built, reports, focus, reducedMotion, theme }: { data: Ga
     <directionalLight position={[-1800, 3000, 1200]} color={palette.sun[0]} intensity={palette.sun[1]} />
     <directionalLight position={[1200, 900, -1500]} color={palette.rim[0]} intensity={palette.rim[1]} />
     <City built={built} data={data} theme={theme} />
-    <ReportBeacons reports={reports} origin={data.origin} glow={glow} reducedMotion={reducedMotion} />
+    <ReportBeacons reports={reports} origin={data.origin} glow={glow} reducedMotion={reducedMotion} onSelect={onSelect} />
     <CameraRig focus={focus} origin={data.origin} reducedMotion={reducedMotion} />
   </>;
 }
@@ -176,7 +178,7 @@ class SceneBoundary extends Component<{ children: ReactNode }, { failed: boolean
   }
 }
 
-export default function HackneyGame({ reports = NO_REPORTS, focus = null, onMapReady, theme = "night" }: HackneyGameProps) {
+export default function HackneyGame({ reports = NO_REPORTS, focus = null, onMapReady, theme = "night", onSelect }: HackneyGameProps) {
   const [loaded, setLoaded] = useState<{ data: GameMapData; built: SceneGeometry } | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [attempt, setAttempt] = useState(0);
@@ -210,7 +212,7 @@ export default function HackneyGame({ reports = NO_REPORTS, focus = null, onMapR
   return <div style={{ position: "absolute", inset: 0, background: PALETTE[theme].bg, transition: "background 400ms" }}>
     {loaded ? <SceneBoundary>
       <Canvas camera={{ position: [3100, 5800, 5300], fov: 42, near: 10, far: 30000 }} dpr={[1, 1.25]} gl={{ antialias: true, alpha: false, powerPreference: "high-performance", logarithmicDepthBuffer: true }} fallback={<div className="game-load-state" role="alert">This map needs a browser with WebGL enabled.</div>}>
-        <Scene data={loaded.data} built={loaded.built} reports={reports} focus={focus} reducedMotion={reducedMotion} theme={theme} />
+        <Scene data={loaded.data} built={loaded.built} reports={reports} focus={focus} reducedMotion={reducedMotion} theme={theme} onSelect={onSelect} />
       </Canvas>
     </SceneBoundary> : <div className="game-load-state" role={error ? "alert" : "status"}>
       <span className="game-loading-mark" aria-hidden="true">✦</span>

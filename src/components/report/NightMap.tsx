@@ -88,9 +88,9 @@ export function NightMap({ reports, focus, dropped, questIds, onSelect, theme }:
         source: "reports",
         slot: "top",
         paint: {
-          "circle-radius": ["interpolate", ["linear"], ["zoom"], 12, 7, 17, 22],
+          "circle-radius": ["interpolate", ["linear"], ["zoom"], 12, 10, 17, 34],
           "circle-color": ["get", "colour"],
-          "circle-opacity": ["case", ["==", ["get", "status"], "fixed"], 0.12, 0.28],
+          "circle-opacity": ["case", ["==", ["get", "status"], "fixed"], 0.18, 0.4],
           "circle-blur": 0.9,
           "circle-emissive-strength": 1,
           "circle-pitch-alignment": "map",
@@ -103,7 +103,7 @@ export function NightMap({ reports, focus, dropped, questIds, onSelect, theme }:
         slot: "top",
         filter: ["==", ["get", "quest"], true],
         paint: {
-          "circle-radius": ["interpolate", ["linear"], ["zoom"], 12, 6, 17, 16],
+          "circle-radius": ["interpolate", ["linear"], ["zoom"], 12, 8, 17, 20],
           "circle-color": "rgba(0,0,0,0)",
           "circle-stroke-color": "#a4d65e",
           "circle-stroke-width": 2,
@@ -117,25 +117,35 @@ export function NightMap({ reports, focus, dropped, questIds, onSelect, theme }:
         source: "reports",
         slot: "top",
         paint: {
-          "circle-radius": ["interpolate", ["linear"], ["zoom"], 12, 2.2, 17, 7],
+          "circle-radius": ["interpolate", ["linear"], ["zoom"], 12, 4, 17, 11],
           "circle-color": ["get", "colour"],
           "circle-stroke-color": "#ffffff",
-          "circle-stroke-width": ["interpolate", ["linear"], ["zoom"], 12, 0.4, 17, 1.6],
+          "circle-stroke-width": ["interpolate", ["linear"], ["zoom"], 12, 1, 17, 2.5],
           "circle-emissive-strength": 1,
           "circle-pitch-alignment": "map",
         },
       });
-      m.on("click", "report-core", (e) => {
-        const id = e.features?.[0]?.properties?.id;
+      // Pins are small, so accept clicks within ~12px of one.
+      const pinAt = (p: mapboxgl.Point) =>
+        m.queryRenderedFeatures(
+          [
+            [p.x - 12, p.y - 12],
+            [p.x + 12, p.y + 12],
+          ],
+          { layers: ["report-core", "report-halo"] },
+        )[0];
+      m.on("click", (e) => {
+        const id = pinAt(e.point)?.properties?.id;
         const report = latest.current.reports.find((r) => r.id === id);
         if (report) latest.current.onSelect?.(report);
       });
-      m.on("mouseenter", "report-core", () => (m.getCanvas().style.cursor = "pointer"));
-      m.on("mouseleave", "report-core", () => (m.getCanvas().style.cursor = ""));
+      m.on("mousemove", (e) => (m.getCanvas().style.cursor = pinAt(e.point) ? "pointer" : ""));
     });
 
     // Slow orbit while idle, like a game's attract mode. Stops on interaction.
     const stop = () => (idleSpin.current = false);
+    // Stop as soon as the pointer is over the map, so pins hold still to be clicked.
+    m.on("mousemove", stop);
     m.on("mousedown", stop);
     m.on("touchstart", stop);
     m.on("wheel", stop);

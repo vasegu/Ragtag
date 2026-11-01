@@ -1,15 +1,15 @@
 "use client";
 
 import { useEffect, useMemo, useRef } from "react";
-import { useFrame } from "@react-three/fiber";
+import { type ThreeEvent, useFrame } from "@react-three/fiber";
 import { AdditiveBlending, Color, DoubleSide, DynamicDrawUsage, InstancedMesh, Object3D, type Texture } from "three";
 import { CATEGORY_COLOURS, latLngToLocal, type GameReport } from "./map-data";
 
 /** All reports share four draw calls, irrespective of their category. */
-export function ReportBeacons({ reports, origin, glow, reducedMotion }: { reports: GameReport[]; origin: { lat: number; lng: number }; glow: Texture; reducedMotion: boolean }) {
+export function ReportBeacons({ reports, origin, glow, reducedMotion, onSelect }: { reports: GameReport[]; origin: { lat: number; lng: number }; glow: Texture; reducedMotion: boolean; onSelect?: (id: string) => void }) {
   const cores = useRef<InstancedMesh>(null), columns = useRef<InstancedMesh>(null), halos = useRef<InstancedMesh>(null), feet = useRef<InstancedMesh>(null);
   const dummy = useMemo(() => new Object3D(), []);
-  const points = useMemo(() => reports.filter((r) => Number.isFinite(r.lat) && Number.isFinite(r.lng)).map((report) => ({ ...latLngToLocal(report.lat, report.lng, origin), color: new Color(report.status === "fixed" ? "#d8e9e7" : CATEGORY_COLOURS[report.category]) })), [reports, origin]);
+  const points = useMemo(() => reports.filter((r) => Number.isFinite(r.lat) && Number.isFinite(r.lng)).map((report) => ({ id: report.id, ...latLngToLocal(report.lat, report.lng, origin), color: new Color(report.status === "fixed" ? "#d8e9e7" : CATEGORY_COLOURS[report.category]) })), [reports, origin]);
 
   useEffect(() => {
     for (const mesh of [cores.current, columns.current, halos.current, feet.current]) {
@@ -49,10 +49,20 @@ export function ReportBeacons({ reports, origin, glow, reducedMotion }: { report
     for (const mesh of [cores.current, columns.current, halos.current, feet.current]) mesh.instanceMatrix.needsUpdate = true;
   });
 
+  // Instanced meshes report which instance was hit; the halo is the big, easy target.
+  const select = (e: ThreeEvent<MouseEvent>) => {
+    if (e.instanceId === undefined || !onSelect) return;
+    e.stopPropagation();
+    onSelect(points[e.instanceId].id);
+  };
+  const hover = (on: boolean) => () => {
+    if (onSelect) document.body.style.cursor = on ? "pointer" : "";
+  };
+
   if (!points.length) return null;
   // Frustum culling is disabled because the instance matrices are animated after creation.
   return <group>
-    <instancedMesh key={`cores-${points.length}`} ref={cores} args={[undefined, undefined, points.length]} frustumCulled={false}>
+    <instancedMesh key={`cores-${points.length}`} ref={cores} args={[undefined, undefined, points.length]} frustumCulled={false} onClick={select} onPointerOver={hover(true)} onPointerOut={hover(false)}>
       <octahedronGeometry args={[1, 0]} />
       <meshBasicMaterial toneMapped={false} />
     </instancedMesh>
@@ -60,7 +70,7 @@ export function ReportBeacons({ reports, origin, glow, reducedMotion }: { report
       <cylinderGeometry args={[0.45, 1, 1, 6, 1, true]} />
       <meshBasicMaterial transparent opacity={0.17} blending={AdditiveBlending} depthWrite={false} toneMapped={false} side={DoubleSide} />
     </instancedMesh>
-    <instancedMesh key={`halos-${points.length}`} ref={halos} args={[undefined, undefined, points.length]} frustumCulled={false}>
+    <instancedMesh key={`halos-${points.length}`} ref={halos} args={[undefined, undefined, points.length]} frustumCulled={false} onClick={select} onPointerOver={hover(true)} onPointerOut={hover(false)}>
       <planeGeometry />
       <meshBasicMaterial map={glow} transparent opacity={0.75} blending={AdditiveBlending} depthWrite={false} toneMapped={false} />
     </instancedMesh>
