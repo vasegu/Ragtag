@@ -1,6 +1,5 @@
--- Persistence heat cells (written by util/heatmap.py + util/upload.py). One row per ~55 m grid cell.
--- active_days / active_weeks = how many separate days / ISO weeks had a report in the cell (not the report count).
-create table heat_cells (
+-- Hotspot grid for the map heatmap; written by heatmap.py with the service role key.
+create table if not exists public.heat_cells (
   cell_id        text primary key,            -- "<lat step>_<lon step>" from the grid, see heatmap.py
   lat            double precision not null,   -- mean of the cell's report coordinates
   lon            double precision not null,
@@ -13,6 +12,6 @@ create table heat_cells (
   updated_at     timestamptz not null default now()
 );
 
-alter table heat_cells enable row level security;
-create policy "read heat cells" on heat_cells for select using (true);
--- no write policies: only the service-role key (util/upload.py) can write.
+alter table public.heat_cells enable row level security;
+drop policy if exists "read heat cells" on public.heat_cells;
+create policy "read heat cells" on public.heat_cells for select using (true);

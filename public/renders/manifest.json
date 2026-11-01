@@ -1,0 +1,29 @@
+{
+  "icons": {
+    "pothole": "/renders/icons/pothole.png",
+    "flytip": "/renders/icons/flytip.png",
+    "streetlight": "/renders/icons/streetlight.png",
+    "graffiti": "/renders/icons/graffiti.png",
+    "pavement": "/renders/icons/pavement.png"
+  },
+  "badges": {
+    "first-report": "/renders/badges/first-report.png",
+    "pothole-hunter": "/renders/badges/pothole-hunter.png",
+    "street-scout": "/renders/badges/street-scout.png",
+    "verifier": "/renders/badges/verifier.png",
+    "fixer": "/renders/badges/fixer.png",
+    "night-owl": "/renders/badges/night-owl.png",
+    "early-bird": "/renders/badges/early-bird.png",
+    "local-hero": "/renders/badges/local-hero.png",
+    "streak-7": "/renders/badges/streak-7.png",
+    "ward-champion": "/renders/badges/ward-champion.png",
+    "kudos": "/renders/badges/kudos.png",
+    "locked": "/renders/badges/locked.png"
+  },
+  "demo": {
+    "pothole": "/renders/demo/pothole.jpg",
+    "flytip": "/renders/demo/flytip.jpg",
+    "streetlight": "/renders/demo/streetlight.jpg",
+    "graffiti": "/renders/demo/graffiti.jpg"
+  }
+}

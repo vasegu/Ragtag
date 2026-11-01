@@ -54,3 +54,6 @@ venv/
 # supabase CLI local state
 /supabase/.temp/
 /supabase/.branches/
+
+# ingest cache
+/data/

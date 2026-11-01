@@ -1,17 +1,12 @@
-import { createClient } from "@/lib/supabase/server";
+import type { Metadata } from "next";
+import { ReportLoader } from "./report/ReportLoader";
 
-export const dynamic = "force-dynamic";
+export const metadata: Metadata = {
+  title: "One Hackney",
+  description: "One app for Hackney: ask the council anything, report problems and watch them get fixed.",
+};
 
-export default async function Home() {
-  const supabase = await createClient();
-  const { error } = await supabase.auth.getSession();
-
-  return (
-    <main className="flex min-h-screen flex-col items-center justify-center gap-4 p-8">
-      <h1 className="text-4xl font-bold">Ragtag</h1>
-      <p className="text-lg">
-        Supabase: {error ? `error (${error.message})` : "connected"}
-      </p>
-    </main>
-  );
+// The whole One Hackney app: phone UI (Home, Ask, Report, Nearby, Me) over the live map.
+export default function Home() {
+  return <ReportLoader />;
 }

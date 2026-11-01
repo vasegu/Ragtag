@@ -1,0 +1,77 @@
+[
+  {
+    "q": "i want to pay my council tax",
+    "expect": ["/pay-your-council-tax-bill", "/register-pay-council-tax"],
+    "hackney": null
+  },
+  {
+    "q": "i live on my own can i pay less council tax",
+    "expect": ["/apply-single-person-discount-council-tax", "/check-if-you-can-pay-less-council-tax"],
+    "hackney": null
+  },
+  {
+    "q": "I'm on a low income, can I get help with council tax?",
+    "expect": ["/apply-council-tax-reduction", "/housing-benefit-and-council-tax-reduction-explained"],
+    "hackney": null
+  },
+  {
+    "q": "I'm behind on my council tax payments",
+    "expect": ["/missed-council-tax-payments"],
+    "hackney": null
+  },
+  {
+    "q": "my bin wasn't collected",
+    "expect": ["/report-missed-collection", "/get-help-your-bin-collections"],
+    "hackney": null
+  },
+  {
+    "q": "how do I get rid of an old sofa",
+    "expect": ["/bulky-waste-collections"],
+    "hackney": null
+  },
+  {
+    "q": "my friend is visiting, where can they park",
+    "expect": ["/on-street-visitor-vouchers", "/estate-parking-visitor-vouchers"],
+    "hackney": null
+  },
+  {
+    "q": "I got a parking ticket I don't think is fair",
+    "expect": ["/dispute-your-penalty-charge-notice", "/grounds-disputing-penalty-charge-notice"],
+    "hackney": null
+  },
+  {
+    "q": "there is black mould in my council flat",
+    "expect": ["/damp-mould-and-condensation", "awaabs-law"],
+    "hackney": null
+  },
+  {
+    "q": "my landlord hasn't fixed my boiler for weeks, what are my rights",
+    "expect": ["/repairs-council-housing", "awaabs-law"],
+    "hackney": null
+  },
+  {
+    "q": "how do I get on the council housing waiting list",
+    "expect": ["/apply-join-housing-register"],
+    "hackney": null
+  },
+  {
+    "q": "I'm going to be evicted next month",
+    "expect": ["/advice-if-youre-worried-youre-about-become-homeless"],
+    "hackney": null
+  },
+  {
+    "q": "my neighbours play loud music every night",
+    "expect": ["/report-noise"],
+    "hackney": null
+  },
+  {
+    "q": "how do I complain about the council",
+    "expect": ["/feedback-and-complaints"],
+    "hackney": null
+  },
+  {
+    "q": "how do I get a blue badge for my mum",
+    "expect": ["/blue-badges"],
+    "hackney": null
+  }
+]
