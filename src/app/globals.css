@@ -1,26 +1,68 @@
 @import "tailwindcss";
 
+/* One Hackney: Hackney brand greens (from hackney.gov.uk) on a calm, card-based canvas. */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --canvas: #f3f3f0;
+  --card: #ffffff;
+  --ink: #141414;
+  --muted: #74746e;
+  --muted-strong: #a3a39c;
+  --line: #e7e7e2;
+  --hackney: #00664f;
+  --hackney-bright: #00b341;
+  --hackney-lime: #a4d65e;
+  --hackney-tint: #e3f1ec;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
+  --color-canvas: var(--canvas);
+  --color-card: var(--card);
+  --color-ink: var(--ink);
+  --color-muted: var(--muted);
+  --color-muted-strong: var(--muted-strong);
+  --color-line: var(--line);
+  --color-hackney: var(--hackney);
+  --color-hackney-bright: var(--hackney-bright);
+  --color-hackney-lime: var(--hackney-lime);
+  --color-hackney-tint: var(--hackney-tint);
+  --font-sans: var(--font-open-sans);
   --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --shadow-card: 0 1px 2px rgb(20 20 20 / 0.04), 0 4px 16px rgb(20 20 20 / 0.04);
+  --shadow-card-hover: 0 2px 4px rgb(20 20 20 / 0.05), 0 12px 32px rgb(20 20 20 / 0.08);
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--canvas);
+  color: var(--ink);
+  font-family: var(--font-open-sans), system-ui, sans-serif;
+}
+
+/* Answer typography for markdown from the agent. */
+.answer > * + * {
+  margin-top: 0.75em;
+}
+.answer ul,
+.answer ol {
+  padding-left: 1.25em;
+}
+.answer ul {
+  list-style: disc;
+}
+.answer ol {
+  list-style: decimal;
+}
+.answer li + li {
+  margin-top: 0.3em;
+}
+.answer li::marker {
+  color: var(--hackney);
+}
+.answer strong {
+  font-weight: 600;
+}
+.answer h1,
+.answer h2,
+.answer h3 {
+  font-weight: 600;
+  letter-spacing: -0.01em;
 }
