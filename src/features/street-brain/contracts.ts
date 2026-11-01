@@ -23,6 +23,25 @@ export const contextSchema = z.object({
   collisions: z.literal('Not connected'),
 });
 export type Context = z.infer<typeof contextSchema>;
+export const workOrderSchema = z.object({
+  summary: z.string(),
+  trade: z.string(),
+  crewSize: z.number().int().min(1).max(12),
+  estimatedMinutes: z.object({ min: z.number(), max: z.number() }),
+  tasks: z.array(z.object({ step: z.string(), detail: z.string(), who: z.string() })),
+  materials: z.array(z.string()),
+  equipment: z.array(z.string()),
+  trafficManagement: z.string(),
+  safety: z.array(z.string()),
+  access: z.string(),
+  deliveryMode: z.enum(['in-house', 'contractor', 'refer']),
+  deliveryReason: z.string(),
+  costRange: z.object({ low: z.number(), high: z.number(), basis: z.string() }),
+  bundleKey: z.string(),
+  afterPhotoRequired: z.boolean(),
+  confirmations: z.array(z.string()),
+});
+export type WorkOrder = z.infer<typeof workOrderSchema>;
 export const assessmentSchema = z.object({
   id: z.string(), createdAt: z.string(), outcome: z.enum(['accepted','review','referred','rejected']),
   category: z.string(), title: z.string(), councilDescription: z.string(),
@@ -40,6 +59,7 @@ export const assessmentSchema = z.object({
   context: contextSchema,
   policyVersion: z.literal('0.3.0 · proposed'), policySources: z.array(z.string()),
   saved: z.boolean(), photoUrls: z.array(z.string()),
+  workOrder: workOrderSchema.nullable().optional(),
 });
 export type Assessment = z.infer<typeof assessmentSchema>;
 
