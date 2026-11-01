@@ -306,22 +306,22 @@ export function ScanScreen({
 
       <div className="mt-3 min-h-0 flex-1 space-y-1.5 overflow-y-auto pb-2">
         {error && <p className="rounded-[16px] bg-[#fdecea] p-3 text-[14px] text-[#b42318]">{error}</p>}
-        {!classification && !error && (
-          <p className="flex items-center gap-2 px-1 font-mono text-[12px] uppercase tracking-[0.12em] text-muted">
-            <span className="h-2 w-2 animate-pulse rounded-full bg-hackney-bright" /> Scanning photo · checking location
-          </p>
-        )}
-        {findings.slice(0, shown).map((f, i) => (
-          <div key={i} className="pop-in flex items-center justify-between rounded-[14px] bg-card px-3.5 py-2.5 shadow-card">
-            <span className="font-mono text-[10.5px] uppercase tracking-[0.12em] text-muted">{f.k}</span>
-            <span className="text-[14px] font-medium">{f.v}</span>
-          </div>
-        ))}
-        {(pipeline.running || pipeline.trace || pipeline.error) && (
-          <div className="pt-1.5">
-            <DecisionTree trace={pipeline.trace} running={pipeline.running} error={pipeline.error} />
-          </div>
-        )}
+        <DecisionTree
+          trace={pipeline.trace}
+          running={pipeline.running || (!pipeline.trace && !pipeline.error)}
+          error={pipeline.error}
+          firstLook={
+            classification
+              ? [
+                  classification.labels[0] ? `Yes. ${classification.labels[0]}` : "Yes, an issue is visible",
+                  `${CATEGORY_META[classification.category].label} · ${Math.round(classification.confidence * 100)}%`,
+                  CATEGORY_META[classification.category].owner,
+                  [`${classification.severity}/5`, ...classification.labels.slice(1, 3)].join(" · "),
+                  null,
+                ]
+              : [null, null, null, null, null]
+          }
+        />
       </div>
 
       <button

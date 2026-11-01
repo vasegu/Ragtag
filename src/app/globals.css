@@ -172,3 +172,7 @@ body {
 .splash-bar { animation: splash-bar 1.1s cubic-bezier(.45,0,.55,1) infinite; }
 @keyframes splash-mark { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.06); } }
 .splash-mark { animation: splash-mark 1.6s ease-in-out infinite; }
+
+/* Decision fork: the branch taken draws itself in. */
+@keyframes fork-draw { from { stroke-dashoffset: 60; } to { stroke-dashoffset: 0; } }
+.fork-draw { stroke-dasharray: 60; animation: fork-draw 600ms ease-out both; }
