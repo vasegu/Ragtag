@@ -8,6 +8,7 @@ import { useVoice } from "@/lib/ask/useVoice";
 import { type Player, levelFor } from "@/lib/report/game";
 import type { Track } from "@/lib/report/track";
 import { CATEGORY_META, type Report } from "@/lib/report/types";
+import { DitherImage } from "./DitherImage";
 import { Mascot, type MascotKind } from "./Mascot";
 import { IconBin, IconCamera, IconChat, IconDroplet, IconHome, IconMic, IconMicOff, IconParking, IconPin, IconPound, IconSearch, IconSpeaker, IconUser, IconWrench } from "./icons";
 import { CategoryIcon, Flame, Label } from "./ui";
@@ -477,8 +478,7 @@ function ReportRow({ report, onOpen, cta }: { report: Report & { distance: numbe
   return (
     <button onClick={() => onOpen(report)} className="flex w-full items-center gap-3 rounded-[18px] bg-card p-3 text-left shadow-card transition active:scale-[0.98]">
       {report.photo_url ? (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img src={report.photo_url} alt="" className="h-11 w-11 shrink-0 rounded-[12px] object-cover" />
+        <DitherImage src={report.photo_url} alt="" className="h-11 w-11 shrink-0 rounded-[12px]" />
       ) : (
         <CategoryIcon category={report.category} size={44} />
       )}

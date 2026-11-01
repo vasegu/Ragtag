@@ -7,6 +7,7 @@ import { buildTrack } from "@/lib/report/track";
 import { Mascot, type MascotKind, type MascotMood } from "./Mascot";
 import { Timeline } from "./Timeline";
 import { DecisionTree } from "./DecisionTree";
+import { DitherImage } from "./DitherImage";
 import { type Decision, sendFeedback } from "@/lib/report/pipeline";
 import { CATEGORIES as SB_CATEGORIES, type WorkOrder } from "@/features/street-brain/contracts";
 import { IconTrophy } from "./icons";
@@ -387,8 +388,7 @@ export function TrackerScreen({
 
       {report.photo_url && (
         <div className="relative h-40 overflow-hidden rounded-[24px] bg-ink shadow-card">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={report.photo_url} alt="Your photo" className="h-full w-full object-cover" />
+          <DitherImage src={report.photo_url} alt="Your photo" className="h-full w-full" />
           <div className="absolute inset-x-0 bottom-0 flex items-center gap-2 bg-gradient-to-t from-black/70 to-transparent p-3 pt-8 text-white">
             <CategoryIcon category={report.category} size={28} />
             <span className="min-w-0 flex-1 truncate text-[15px] font-semibold">{report.title}</span>
@@ -593,7 +593,20 @@ export function VerifySheet({
   onAnswer: (a: "there" | "fixed") => void;
   onClose: () => void;
 }) {
-  const track = buildTrack(report, all);
+  // Backfilled reports carry a real street brain assessment: decisions and a work order.
+  const [assessed, setAssessed] = useState<{ decisionTrace: Decision[]; workOrder: WorkOrder | null } | null>(null);
+  useEffect(() => {
+    if (report.source !== "fixmystreet") return;
+    let live = true;
+    fetch(`/api/reports/${report.id}/assessment`)
+      .then((r) => r.json())
+      .then((d: { assessment: { decisionTrace: Decision[]; workOrder: WorkOrder | null } | null }) => live && setAssessed(d.assessment))
+      .catch(() => {});
+    return () => {
+      live = false;
+    };
+  }, [report.id, report.source]);
+  const track = buildTrack(report, all, { workOrder: assessed?.workOrder ?? null });
   return (
     <div className="absolute inset-0 z-40 flex items-end bg-ink/40" onClick={onClose}>
       <div className="slide-up max-h-[88%] w-full overflow-y-auto rounded-t-[32px] bg-card p-5 pb-8" onClick={(e) => e.stopPropagation()}>
@@ -608,13 +621,21 @@ export function VerifySheet({
           </div>
         </div>
         {report.photo_url && (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img src={report.photo_url} alt="Photo from the original report" className="mt-4 h-36 w-full rounded-[18px] object-cover" />
+          <DitherImage src={report.photo_url} alt="Photo from the original report" className="mt-4 h-36 w-full rounded-[18px]" />
         )}
 
         <div className="mt-4">
           <Timeline track={track} compact />
         </div>
+
+        {assessed && assessed.decisionTrace.length > 0 && (
+          <details className="mt-3 rounded-[18px] bg-canvas p-3">
+            <summary className="cursor-pointer list-none text-[13px] font-semibold text-ink">How the council AI assessed this →</summary>
+            <div className="mt-3">
+              <DecisionTree trace={assessed.decisionTrace} running={false} error={null} firstLook={[null, null, null, null, null]} instant />
+            </div>
+          </details>
+        )}
 
         {report.status === "fixed" ? (
           <button onClick={onClose} className="mt-2 h-12 w-full rounded-full bg-hackney-tint text-[15px] font-semibold text-hackney">

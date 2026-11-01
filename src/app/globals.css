@@ -176,3 +176,27 @@ body {
 /* Decision fork: the branch taken draws itself in. */
 @keyframes fork-draw { from { stroke-dashoffset: 60; } to { stroke-dashoffset: 0; } }
 .fork-draw { stroke-dasharray: 60; animation: fork-draw 600ms ease-out both; }
+
+/* ---------- Dither image loader ---------- */
+@property --dot { syntax: "<percentage>"; inherits: false; initial-value: 80%; }
+.dither-wrap { position: relative; overflow: hidden; background: var(--hackney-tint); }
+.dither-wrap::before {
+  content: ""; position: absolute; inset: 0; z-index: 1; pointer-events: none;
+  background-image: radial-gradient(rgb(0 102 79 / 0.38) 1.1px, transparent 1.4px);
+  background-size: 7px 7px;
+  animation: dither-shift 0.9s steps(3) infinite;
+  transition: opacity 700ms ease;
+}
+.dither-wrap.loaded::before { opacity: 0; animation: none; }
+@keyframes dither-shift { 0% { background-position: 0 0; } 33% { background-position: 3px 2px; } 66% { background-position: 1px 4px; } 100% { background-position: 0 0; } }
+.dither-img { opacity: 0; filter: blur(14px) saturate(0.5) contrast(1.2); transform: scale(1.05); }
+.dither-img.loaded {
+  opacity: 1; filter: none; transform: none;
+  transition: opacity 200ms ease, filter 900ms cubic-bezier(.2,.8,.2,1), transform 900ms cubic-bezier(.2,.8,.2,1);
+  -webkit-mask-image: radial-gradient(circle, #000 var(--dot), transparent calc(var(--dot) + 6%));
+  mask-image: radial-gradient(circle, #000 var(--dot), transparent calc(var(--dot) + 6%));
+  -webkit-mask-size: 7px 7px; mask-size: 7px 7px;
+  animation: dither-resolve 950ms cubic-bezier(.3,.7,.2,1) both;
+}
+/* Dots grow from nothing until they overlap into the full picture. */
+@keyframes dither-resolve { from { --dot: 0%; } to { --dot: 80%; } }

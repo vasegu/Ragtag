@@ -33,6 +33,7 @@ export function DecisionTree({
   firstLook,
   onDispute,
   disputed = {},
+  instant = false,
 }: {
   trace: Decision[] | null;
   running: boolean;
@@ -41,6 +42,8 @@ export function DecisionTree({
   /** Resident disagrees with a decided step (2-5). */
   onDispute?: (stage: number, answer: string) => void;
   disputed?: Record<number, string>;
+  /** Show all decisions at once (for past reports). */
+  instant?: boolean;
 }) {
   const [thinking, setThinking] = useState(0);
   const [revealed, setRevealed] = useState(0);
@@ -53,10 +56,14 @@ export function DecisionTree({
 
   useEffect(() => {
     if (!trace) return;
+    if (instant) {
+      setRevealed(trace.length);
+      return;
+    }
     setRevealed(0);
     const t = setInterval(() => setRevealed((n) => (n >= trace.length ? n : n + 1)), 700);
     return () => clearInterval(t);
-  }, [trace]);
+  }, [trace, instant]);
 
   const done = Boolean(trace) && revealed >= (trace?.length ?? 0);
 
