@@ -7,6 +7,7 @@ config({ path: ".env.secrets.local", quiet: true });
 
 const nextConfig: NextConfig = {
   serverExternalPackages: ["@openai/agents"],
+  outputFileTracingIncludes: { "/api/street-brain/**": ["./harvest/docs/severity-assessment-model.md"] },
 };
 
 export default nextConfig;
