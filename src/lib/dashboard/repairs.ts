@@ -34,6 +34,8 @@ export type RepairIssue = {
   address: string | null; postcode: string | null; lat: number | null; lon: number | null;
   owner: string | null; photos: string[]; recommendation: string | null;
   deadline: null; referred: boolean;
+  proposal?: { policyLevel: string; reason: string; rating: number | null; mode: string };
+  commitment?: { status: string; resourceId: string | null };
   workOrder: { trade: string; crewSize: number | null; minutes: number | null; materials: string[]; equipment: string[]; costLow: number | null; costHigh: number | null; mode: string; access: string | null; quantity: string | null; sizeBand: string | null; assignedUnit: string | null } | null;
 };
 export const repairIssueSchema: z.ZodType<RepairIssue> = z.object({
@@ -43,6 +45,8 @@ export const repairIssueSchema: z.ZodType<RepairIssue> = z.object({
   raisedAt: z.string().nullable(), updatedAt: z.string().nullable(), closedAt: z.string().nullable(),
   address: z.string().nullable(), postcode: z.string().nullable(), lat: z.number().nullable(), lon: z.number().nullable(), owner: z.string().nullable(),
   photos: z.array(z.string().url()), recommendation: z.string().nullable(), deadline: z.null(), referred: z.boolean(),
+  proposal: z.object({ policyLevel: z.string(), reason: z.string(), rating: z.number().nullable(), mode: z.string() }).optional(),
+  commitment: z.object({ status: z.string(), resourceId: z.string().nullable() }).optional(),
   workOrder: z.object({ trade: z.string(), crewSize: z.number().nullable(), minutes: z.number().nullable(), materials: z.array(z.string()), equipment: z.array(z.string()), costLow: z.number().nullable(), costHigh: z.number().nullable(), mode: z.string(), access: z.string().nullable(), quantity: z.string().nullable(), sizeBand: z.string().nullable(), assignedUnit: z.string().nullable() }).nullable(),
 });
 export const text = (v: unknown): string | null => typeof v === "string" && v.trim() ? v.trim() : null;

@@ -26,7 +26,7 @@ export const defaultScenario: Scenario = {
   ], equipment: [], materials: [], start: 480, end: 960, buffer: 15, budget: 5000, inspectionMinutes: 30, inspectionCost: 35,
 };
 export function defaultPlanning(issue: RepairIssue, scenario: Scenario): Planning {
-  return { priority: issue.priority, reason: "", action: "Inspect", recommendation: "Inspect the reported issue, confirm ownership and establish the repair scope.", trade: "inspection", minutes: scenario.inspectionMinutes, crewSize: 1, cost: scenario.inspectionCost, materials: [], equipment: [], scopeReady: false, dueAt: "", policyUrl: "", deadlineAction: "Inspect" };
+  return { priority: issue.priority, reason: issue.proposal ? `Stored AI proposal, not human-verified: ${issue.proposal.reason}` : "", action: "Inspect", recommendation: "Inspect the reported issue, confirm ownership and establish the repair scope.", trade: "inspection", minutes: scenario.inspectionMinutes, crewSize: 1, cost: scenario.inspectionCost, materials: [], equipment: [], scopeReady: false, dueAt: "", policyUrl: "", deadlineAction: "Inspect" };
 }
 export type Assignment = {
   issueId: string; title: string; action: Planning["action"]; priority: Planning["priority"];
@@ -62,14 +62,14 @@ export function generateSchedule(issues: RepairIssue[], plans: Record<string, Pl
     const dueAt = plans[issue.id]?.dueAt ?? "";
     const horizonEnd = londonTime(`${new Date(Date.parse(`${firstDate}T12:00:00Z`) + 6 * 86400000).toISOString().slice(0, 10)}T23:59`);
     const block = (reason: string) => result.blockers.push({ issueId: issue.id, title: issue.title, reason, dueAt, targetAtRisk: !!dueAt && londonTime(dueAt) <= horizonEnd });
+    if ((plans[issue.id]?.priority ?? issue.priority) === "Emergency") { block("Immediate safety response required. Do not wait for this proposed routine schedule."); continue; }
     if (issue.referred) { block("Referral required; this is not a council repair assignment."); continue; }
     if (issue.status === "In progress") { block("Already in progress: confirm remaining work and existing resource commitments before rescheduling."); continue; }
-    if (issue.source === "Public work order" && issue.rawStatus === "scheduled") { block("Existing scheduled booking: confirm its assigned crew and remaining scope before rescheduling."); continue; }
+    if (/^(scheduled|action scheduled)$/i.test(issue.rawStatus) || issue.commitment) { block(`Existing or unverified work-order commitment (${issue.commitment?.status ?? issue.rawStatus}): confirm its assigned crew and remaining scope before rescheduling.`); continue; }
     const parsed = planningSchema.safeParse(plans[issue.id] ?? defaultPlanning(issue, scenario));
     if (!parsed.success) { block("Planning details are incomplete or invalid. Review scope, priority evidence and target source."); continue; }
     const p = parsed.data;
     if (issue.source === "Public work order" && !p.scopeReady) { block("Public work order provenance needs review: confirm it is live, distinct work and check existing commitments before assigning a visit."); continue; }
-    if (p.priority === "Emergency") { block("Immediate safety response required. Do not wait for this proposed routine schedule."); continue; }
     if (!issue.address && (issue.lat === null || issue.lon === null)) { block("Location needed before assigning a visit."); continue; }
     const candidates = crews.filter(c => c.trade === p.trade && c.people >= p.crewSize);
     if (!candidates.length) { block(`No qualified ${p.trade} crew with ${p.crewSize} people available in this scenario.`); continue; }

@@ -16,7 +16,7 @@ function restore(raw: string | null): WorkspaceState {
     return { scenario: scenario.success ? scenario.data : defaultScenario, plans: readPlanning(p.plans), startDate, generated: typeof p.generated === "string" ? p.generated : "", accepted: typeof p.accepted === "string" ? p.accepted : "" };
   } catch { return { ...initial, startDate: londonToday() }; }
 }
-const responseSchema = z.object({ issues: z.array(repairIssueSchema), total: z.number().int().nonnegative(), hasMore: z.boolean() });
+const responseSchema = z.object({ issues: z.array(repairIssueSchema), total: z.number().int().nonnegative(), hasMore: z.boolean(), nextOffset: z.number().int().nonnegative(), warning: z.string().optional() });
 export function useRepairs() {
   const [issues, setIssues] = useState<RepairIssue[]>([]);
   const [state, setState] = useState<WorkspaceState>(initial);
@@ -39,14 +39,15 @@ export function useRepairs() {
       setLoading(true); setError(""); const all: RepairIssue[] = [];
       for (const source of ["reports", "jobs"]) {
         try {
-          let page = 0, more = true;
+          let offset = 0, more = true;
           while (more && !cancelled) {
-            const r = await fetch(`/api/dashboard/issues?source=${source}&page=${page}`, { signal: controller.signal, cache: "no-store" });
+            const r = await fetch(`/api/dashboard/issues?source=${source}&offset=${offset}`, { signal: controller.signal, cache: "no-store" });
             const raw = await r.json();
             if (!r.ok) throw new Error(raw.error ?? "Could not load reports.");
             const data = responseSchema.parse(raw);
-            if (data.hasMore && data.issues.length === 0) throw new Error("Report pagination returned an empty page. Please refresh.");
-            all.push(...data.issues); more = data.hasMore; page++;
+            if (data.warning) setWarning(data.warning);
+            if (data.hasMore && (data.issues.length === 0 || data.nextOffset <= offset)) throw new Error("Report pagination returned an incomplete page. Please refresh.");
+            all.push(...data.issues); more = data.hasMore; offset = data.nextOffset;
             if (!cancelled) setIssues([...new Map(all.map(i => [i.id, i])).values()]);
           }
         } catch (e) {
