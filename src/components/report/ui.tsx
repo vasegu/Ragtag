@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { CATEGORY_META, type Category } from "@/lib/report/types";
+import { IconLock, IconStar } from "./icons";
 
 // iPhone 15: 393x852 points, plus an 11px bezel each side.
 const SCREEN = { w: 393, h: 852 };
@@ -108,7 +109,7 @@ export function BadgeImage({ id, locked, size = 64 }: { id: string; locked?: boo
         className={`grid shrink-0 place-items-center rounded-full ${locked ? "bg-line" : "bg-gradient-to-br from-hackney-lime to-hackney"}`}
         style={{ width: size, height: size }}
       >
-        <span className="text-[22px]">{locked ? "🔒" : "★"}</span>
+        {locked ? <IconLock className="h-1/2 w-1/2 text-muted" /> : <IconStar className="h-1/2 w-1/2 text-white" />}
       </span>
     );
   return (

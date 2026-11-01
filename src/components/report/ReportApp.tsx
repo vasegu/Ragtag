@@ -8,13 +8,16 @@ import { CATEGORY_META, type Classification, DEMO_LOCATION, type LatLng, type Qu
 import type { MascotKind } from "./Mascot";
 import { NightMap } from "./NightMap";
 import { BadgesScreen, BoardScreen, CaptureScreen, HomeScreen, RewardOverlay, ScanScreen, StreakSheet, TrackerScreen, VerifySheet } from "./screens";
+import { AskTab, FrontDoor, NearbyTab, type Tab, TabBar } from "./tabs";
+import { IconMoon, IconSun } from "./icons";
 import { PhoneFrame, useIsPhone } from "./ui";
+import { buildTrack } from "@/lib/report/track";
 
 const HackneyGame = dynamic(() => import("@/components/game/HackneyGame"), { ssr: false });
 
 const HAS_MAPBOX = Boolean(process.env.NEXT_PUBLIC_MAPBOX_TOKEN);
 
-type Screen = "home" | "capture" | "scan" | "tracker" | "badges" | "board";
+type Screen = "tabs" | "capture" | "scan" | "tracker" | "badges" | "board";
 
 const HACKNEY_BOUNDS = { minLat: 51.517, maxLat: 51.578, minLng: -0.107, maxLng: -0.014 };
 
@@ -49,7 +52,10 @@ export function ReportApp() {
     const h = new Date().getHours();
     return h >= 7 && h < 19 ? "day" : "night";
   });
-  const [screen, setScreen] = useState<Screen>("home");
+  const [screen, setScreen] = useState<Screen>("tabs");
+  const [tab, setTab] = useState<Tab>("home");
+  // A question started from Home (search bar or quick tile), sent when the Ask tab opens.
+  const [askSeed, setAskSeed] = useState<string | null>(null);
   const [reports, setReports] = useState<Report[]>([]);
   const [location, setLocation] = useState<LatLng>(DEMO_LOCATION);
   const [address, setAddress] = useState("London Fields, Hackney E8");
@@ -108,6 +114,11 @@ export function ReportApp() {
     [reports, location],
   );
   const questIds = useMemo(() => quests.map((q) => q.id), [quests]);
+  const nearby = useMemo(() => reports.map((r) => ({ ...r, distance: metres(location, r) })).sort((a, b) => a.distance - b.distance), [reports, location]);
+  const active = useMemo(
+    () => (submitted ? { report: submitted, track: buildTrack(submitted, reports, { classification }) } : null),
+    [submitted, reports, classification],
+  );
   const stats = useMemo(() => {
     const open = reports.filter((r) => r.status !== "fixed").length;
     const fixed = reports.filter((r) => r.status === "fixed").length;
@@ -181,8 +192,14 @@ export function ReportApp() {
     setVerifying(r);
   };
 
+  const ask = (q?: string) => {
+    if (q) setAskSeed(q);
+    setTab("ask");
+    setScreen("tabs");
+  };
+
   const home = () => {
-    setScreen("home");
+    setScreen("tabs");
     setFocus(null);
   };
 
@@ -214,8 +231,8 @@ export function ReportApp() {
       {/* Desktop overlay: title, live counts, mascot picker. */}
       <div className="pointer-events-none absolute right-6 top-6 z-20 hidden w-[300px] space-y-3 md:block">
         <div className="pointer-events-auto rounded-[24px] bg-black/55 p-5 text-white backdrop-blur-xl ring-1 ring-white/10">
-          <p className="font-mono text-[10.5px] uppercase tracking-[0.16em] text-hackney-lime">One Hackney · Report</p>
-          <p className="mt-2 text-[22px] font-semibold leading-tight tracking-[-0.02em]">Snap it. See it ranked. Watch it get fixed.</p>
+          <p className="font-mono text-[10.5px] uppercase tracking-[0.16em] text-hackney-lime">One Hackney</p>
+          <p className="mt-2 text-[22px] font-semibold leading-tight tracking-[-0.02em]">One app for the council. Ask anything, report anything, see it fixed.</p>
           <div className="mt-4 grid grid-cols-2 gap-3">
             <div>
               <p className="text-[28px] font-semibold tabular-nums tracking-[-0.03em]">{stats.open}</p>
@@ -270,7 +287,10 @@ export function ReportApp() {
           <div className="flex gap-1">
             {(["day", "night"] as const).map((t) => (
               <button key={t} onClick={() => setTheme(t)} className={`rounded-full px-3 py-1.5 text-[12.5px] font-medium ${theme === t ? "bg-white text-ink" : "text-white/70 hover:text-white"}`}>
-                {t === "day" ? "☀ Day" : "☾ Night"}
+                <span className="flex items-center gap-1.5">
+                  {t === "day" ? <IconSun className="h-3.5 w-3.5" /> : <IconMoon className="h-3.5 w-3.5" />}
+                  {t === "day" ? "Day" : "Night"}
+                </span>
               </button>
             ))}
           </div>
@@ -287,17 +307,28 @@ export function ReportApp() {
 
       <div className={`pointer-events-none relative z-10 flex h-full items-center ${isPhone ? "" : "pl-5 md:pl-10"}`}>
         <PhoneFrame>
-          <div className={`h-full overflow-y-auto ${isPhone ? "pt-2" : "pt-[54px]"}`}>
-            {screen === "home" && (
+          <div className={`h-full ${screen === "tabs" && tab === "ask" ? "overflow-hidden" : "overflow-y-auto"} ${isPhone ? "pt-2" : "pt-[54px]"}`}>
+            {screen === "tabs" && tab === "home" && (
+              <FrontDoor
+                player={player}
+                mascot={mascot}
+                active={active}
+                quests={quests}
+                onAsk={ask}
+                onReport={() => setScreen("capture")}
+                onOpen={(r) => (submitted && r.id === submitted.id ? setScreen("tracker") : openReport(r))}
+                onTab={setTab}
+              />
+            )}
+            {screen === "tabs" && tab === "ask" && <AskTab initial={askSeed} onReport={() => setScreen("capture")} />}
+            {screen === "tabs" && tab === "nearby" && <NearbyTab reports={nearby} onOpen={openReport} />}
+            {screen === "tabs" && tab === "me" && (
               <HomeScreen
                 player={player}
                 mascot={mascot}
                 quests={quests}
                 onReport={() => setScreen("capture")}
-                onQuest={(q) => {
-                  setFocus({ lat: q.lat, lng: q.lng });
-                  setVerifying(q);
-                }}
+                onQuest={openReport}
                 onTab={(t) => setScreen(t)}
                 onStreak={() => setStreakOpen(true)}
               />
@@ -321,6 +352,7 @@ export function ReportApp() {
             {screen === "board" && <BoardScreen player={player} onBack={home} />}
           </div>
 
+          {screen === "tabs" && <TabBar tab={tab} onTab={setTab} onReport={() => setScreen("capture")} />}
           {streakOpen && <StreakSheet player={player} onClose={() => setStreakOpen(false)} />}
           {verifying && <VerifySheet report={verifying} all={reports} onAnswer={(a) => answerQuest(verifying, a)} onClose={() => setVerifying(null)} />}
           {reward && <RewardOverlay reward={reward} player={player} mascot={mascot} onClose={() => setReward(null)} />}

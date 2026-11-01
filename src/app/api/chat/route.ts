@@ -33,7 +33,7 @@ export async function POST(req: Request) {
           }
         }
         await result.completed;
-        yield { type: "done", history: result.history, sources: context.sources };
+        yield { type: "done", history: result.history, sources: context.sources, areas: context.areas };
       } catch (err) {
         if (!(err instanceof InputGuardrailTripwireTriggered)) throw err;
         text = REFUSAL;

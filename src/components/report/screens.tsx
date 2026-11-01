@@ -6,6 +6,7 @@ import { CATEGORY_META, type Classification, type QueueInfo, type Report } from 
 import { buildTrack } from "@/lib/report/track";
 import { Mascot, type MascotKind, type MascotMood } from "./Mascot";
 import { Timeline } from "./Timeline";
+import { IconTrophy } from "./icons";
 import { BadgeImage, Card, CategoryIcon, Flame, Label, Rings } from "./ui";
 
 const DEMO_PHOTOS = ["pothole", "flytip", "streetlight", "graffiti"] as const;
@@ -132,7 +133,9 @@ export function HomeScreen({
 
       <button onClick={() => onTab("board")} className="w-full text-left">
         <Card className="flex items-center gap-3">
-          <span className="grid h-11 w-11 place-items-center rounded-[14px] bg-[#f3efff] text-[20px]">🏆</span>
+          <span className="grid h-11 w-11 place-items-center rounded-[14px] bg-[#f3efff] text-[#7b5cff]">
+            <IconTrophy className="h-[22px] w-[22px]" />
+          </span>
           <span className="flex-1">
             <span className="block text-[14px] font-semibold">
               {player.ward} is #{myRank} this week

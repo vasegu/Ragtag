@@ -22,12 +22,14 @@ export type Turn =
       sources: Source[];
       status: "thinking" | "streaming" | "done" | "error";
       refused?: boolean;
+      /** Service areas the agent searched, e.g. "bins-and-recycling". */
+      areas?: string[];
     };
 
 type StreamEvent =
   | { type: "raw_model_stream_event"; data: { type: "output_text_delta"; delta: string } }
   | { type: "run_item_stream_event"; name: string; item: { rawItem?: { type?: string; name?: string; arguments?: string } } }
-  | { type: "done"; history: unknown[]; sources: Source[]; refused?: boolean }
+  | { type: "done"; history: unknown[]; sources: Source[]; refused?: boolean; areas?: string[] }
   | { type: "error"; message: string };
 
 const id = () => Math.random().toString(36).slice(2);
@@ -88,7 +90,7 @@ export function useAsk({ mock = false } = {}) {
               if (query) update((turn) => ({ searches: [...turn.searches, query] }));
             } else if (event.type === "done") {
               history.current = event.history;
-              update(() => ({ sources: event.sources, status: "done", refused: event.refused }));
+              update(() => ({ sources: event.sources, status: "done", refused: event.refused, areas: event.areas }));
             } else if (event.type === "error") {
               update(() => ({ status: "error" }));
             }

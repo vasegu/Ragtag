@@ -215,7 +215,7 @@ export default function HackneyGame({ reports = NO_REPORTS, focus = null, onMapR
         <Scene data={loaded.data} built={loaded.built} reports={reports} focus={focus} reducedMotion={reducedMotion} theme={theme} onSelect={onSelect} />
       </Canvas>
     </SceneBoundary> : <div className="game-load-state" role={error ? "alert" : "status"}>
-      <span className="game-loading-mark" aria-hidden="true">✦</span>
+      <svg className="game-loading-mark" viewBox="0 0 24 24" width="22" height="22" fill="currentColor" aria-hidden="true"><path d="M12 3c.7 4.5 2.5 6.3 7 7-4.5.7-6.3 2.5-7 7-.7-4.5-2.5-6.3-7-7 4.5-.7 6.3-2.5 7-7z" /></svg>
       <span>{error ?? "Lighting up Hackney…"}</span>
       {error ? <button onClick={() => { setError(null); setAttempt((n) => n + 1); }}>Try again</button> : <span className="game-loading-detail">Preparing the neighbourhood</span>}
     </div>}
