@@ -25,6 +25,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
+      <head>
+        {/* Live voice connects to OpenAI over WebRTC; warm the connection early. */}
+        <link rel="preconnect" href="https://api.openai.com" crossOrigin="anonymous" />
+      </head>
       <body className={`${openSans.variable} ${geistMono.variable} antialiased`}>{children}</body>
     </html>
   );

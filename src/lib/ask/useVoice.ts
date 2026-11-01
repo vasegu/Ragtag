@@ -19,6 +19,39 @@ Never read out web addresses; say the page name and that the link is on their sc
 For street problems like fly-tipping, potholes or broken lights, suggest tapping the camera button to report it.
 If asked about something unrelated to the council or public services, politely say you can only help with Hackney Council.`;
 
+// A voice key fetched ahead of time, so tapping the mic skips a server round trip.
+// Keys last 10 minutes and are used once; a fresh one is fetched after each use.
+type VoiceKey = { key: string; model: string; expiresAt: number };
+let readyKey: VoiceKey | null = null;
+let pendingKey: Promise<VoiceKey> | null = null;
+
+function fetchKey(): Promise<VoiceKey> {
+  pendingKey ??= fetch("/api/realtime", { method: "POST" })
+    .then(async (res) => {
+      if (!res.ok) throw new Error((await res.json()).error ?? "Voice is unavailable");
+      return (await res.json()) as VoiceKey;
+    })
+    .finally(() => {
+      pendingKey = null;
+    });
+  return pendingKey;
+}
+
+/** Warm the voice key in the background. Safe to call often. */
+export function prepareVoice() {
+  if (readyKey && readyKey.expiresAt * 1000 - Date.now() > 60_000) return;
+  fetchKey()
+    .then((k) => (readyKey = k))
+    .catch(() => {});
+}
+
+async function takeKey(): Promise<VoiceKey> {
+  const k = readyKey && readyKey.expiresAt * 1000 - Date.now() > 30_000 ? readyKey : await fetchKey();
+  readyKey = null;
+  prepareVoice();
+  return k;
+}
+
 export function useVoice() {
   const [status, setStatus] = useState<VoiceStatus>("idle");
   const [lines, setLines] = useState<VoiceLine[]>([]);
@@ -49,10 +82,14 @@ export function useVoice() {
     setLines([]);
     setSources([]);
     try {
-      // Ask for the mic up front, with a timeout: a blocked prompt can hang instead of rejecting.
-      const mic = await Promise.race([
-        navigator.mediaDevices.getUserMedia({ audio: true }),
-        new Promise<never>((_, reject) => setTimeout(() => reject(new Error("Microphone access was blocked.")), 12000)),
+      // Mic permission and the voice key in parallel. The mic has a timeout because a
+      // blocked prompt can hang instead of rejecting.
+      const [mic, { key, model }] = await Promise.all([
+        Promise.race([
+          navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true } }),
+          new Promise<never>((_, reject) => setTimeout(() => reject(new Error("Microphone access was blocked.")), 12000)),
+        ]),
+        takeKey(),
       ]);
 
       // Loudness meters: one on the mic, one on the agent's voice once its track arrives.
@@ -84,9 +121,6 @@ export function useVoice() {
       };
       audio.current = { ctx, mic, raf: requestAnimationFrame(tick) };
 
-      const res = await fetch("/api/realtime", { method: "POST" });
-      if (!res.ok) throw new Error((await res.json()).error ?? "Voice is unavailable");
-      const { key, model } = (await res.json()) as { key: string; model: string };
 
       const searchHackney = tool({
         name: "search_hackney",

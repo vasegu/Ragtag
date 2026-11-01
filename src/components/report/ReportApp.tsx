@@ -12,6 +12,7 @@ import { AskTab, FrontDoor, NearbyTab, type Tab, TabBar } from "./tabs";
 import { IconMoon, IconSun } from "./icons";
 import { PhoneFrame, useIsPhone } from "./ui";
 import { buildTrack } from "@/lib/report/track";
+import { prepareVoice } from "@/lib/ask/useVoice";
 
 const HackneyGame = dynamic(() => import("@/components/game/HackneyGame"), { ssr: false });
 
@@ -73,6 +74,9 @@ export function ReportApp() {
   const [reward, setReward] = useState<Reward | null>(null);
   const [verifying, setVerifying] = useState<Report | null>(null);
   const [streakOpen, setStreakOpen] = useState(false);
+
+  // Voice: get a key ready so the mic connects quickly.
+  useEffect(() => prepareVoice(), []);
 
   useEffect(() => {
     fetch("/api/reports")
