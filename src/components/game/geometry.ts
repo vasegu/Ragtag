@@ -2,6 +2,8 @@ import { Color, ShapeUtils, Vector2 } from "three";
 import type { GameMapData } from "./map-data";
 
 export type MeshData = { position: Float32Array; normal: Float32Array; color: Float32Array };
+// Flat layers are spaced a few units apart (ground < parks < roads < water < London Fields)
+// so they don't z-fight when the camera is far away.
 export type SceneGeometry = {
   buildings: MeshData;
   outlines: Float32Array;
@@ -71,19 +73,19 @@ export function buildSceneGeometry(data: GameMapData): SceneGeometry {
     });
   });
   const roadColor = new Color("#2d535e");
-  for (const [width, line] of data.roads) ribbon(roads, line, width, 0.65, roadColor);
+  for (const [width, line] of data.roads) ribbon(roads, line, width, 2.6, roadColor);
   const waterColor = new Color("#0b5661");
   for (const [width, coordinates] of data.water) {
-    if (width === 0) surface(water, coordinates, 0.9, waterColor);
-    else ribbon(water, coordinates, width, 0.9, waterColor);
+    if (width === 0) surface(water, coordinates, 3.6, waterColor);
+    else ribbon(water, coordinates, width, 3.6, waterColor);
   }
-  for (const park of data.parks) surface(parks, park, 0.4, new Color("#00664f"));
+  for (const park of data.parks) surface(parks, park, 1.4, new Color("#00664f"));
   if (data.londonFields.length >= 6) {
-    surface(fields, data.londonFields, 1, new Color("#00664f"));
+    surface(fields, data.londonFields, 4.4, new Color("#00664f"));
     const p = data.londonFields;
     for (let i = 0; i < p.length; i += 2) {
       const j = (i + 2) % p.length;
-      fieldBorder.push(p[i],1.5,-p[i+1],p[j],1.5,-p[j+1]);
+      fieldBorder.push(p[i],5.2,-p[i+1],p[j],5.2,-p[j+1]);
     }
   }
   return { buildings: finish(buildings), outlines: new Float32Array(outlines), roads: finish(roads), water: finish(water), parks: finish(parks), fields: finish(fields), fieldBorder: new Float32Array(fieldBorder) };

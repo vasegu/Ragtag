@@ -40,7 +40,7 @@ export function ReportBeacons({ reports, origin, glow, reducedMotion }: { report
       dummy.scale.setScalar(85 + Math.sin(t + i) * 5);
       dummy.updateMatrix();
       halos.current!.setMatrixAt(i, dummy.matrix);
-      dummy.position.y = 1.8;
+      dummy.position.y = 6;
       dummy.rotation.set(-Math.PI / 2, 0, 0);
       dummy.scale.setScalar(23);
       dummy.updateMatrix();

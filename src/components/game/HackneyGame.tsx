@@ -118,7 +118,7 @@ const City = memo(function City({ built, data, theme }: { built: SceneGeometry; 
   }, [data.londonFields]);
 
   return <group>
-    <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.5, 0]}>
+    <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -2, 0]}>
       <planeGeometry args={[32000, 32000]} />
       <meshStandardMaterial color={palette.ground} roughness={1} />
     </mesh>
@@ -126,7 +126,7 @@ const City = memo(function City({ built, data, theme }: { built: SceneGeometry; 
     <mesh geometry={assets.roads}><meshBasicMaterial vertexColors transparent opacity={0.62} /></mesh>
     <mesh geometry={assets.water}><meshPhysicalMaterial vertexColors metalness={0.55} roughness={0.2} clearcoat={0.8} emissive="#07353b" emissiveIntensity={0.32} /></mesh>
     <mesh geometry={assets.fields}><meshStandardMaterial vertexColors emissive="#00b37f" emissiveIntensity={0.28} roughness={0.9} /></mesh>
-    <mesh position={[fieldsCenter[0], 1.2, fieldsCenter[1]]} rotation={[-Math.PI / 2, 0, 0]}>
+    <mesh position={[fieldsCenter[0], 6, fieldsCenter[1]]} rotation={[-Math.PI / 2, 0, 0]}>
       <planeGeometry args={[720, 1000]} />
       <meshBasicMaterial map={assets.glow} color="#00b884" transparent opacity={0.3} blending={AdditiveBlending} depthWrite={false} toneMapped={false} />
     </mesh>
@@ -209,7 +209,7 @@ export default function HackneyGame({ reports = NO_REPORTS, focus = null, onMapR
 
   return <div style={{ position: "absolute", inset: 0, background: PALETTE[theme].bg, transition: "background 400ms" }}>
     {loaded ? <SceneBoundary>
-      <Canvas camera={{ position: [3100, 5800, 5300], fov: 42, near: 2, far: 30000 }} dpr={[1, 1.25]} gl={{ antialias: true, alpha: false, powerPreference: "high-performance" }} fallback={<div className="game-load-state" role="alert">This map needs a browser with WebGL enabled.</div>}>
+      <Canvas camera={{ position: [3100, 5800, 5300], fov: 42, near: 10, far: 30000 }} dpr={[1, 1.25]} gl={{ antialias: true, alpha: false, powerPreference: "high-performance", logarithmicDepthBuffer: true }} fallback={<div className="game-load-state" role="alert">This map needs a browser with WebGL enabled.</div>}>
         <Scene data={loaded.data} built={loaded.built} reports={reports} focus={focus} reducedMotion={reducedMotion} theme={theme} />
       </Canvas>
     </SceneBoundary> : <div className="game-load-state" role={error ? "alert" : "status"}>
