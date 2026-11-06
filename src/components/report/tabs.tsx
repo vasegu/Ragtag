@@ -55,8 +55,8 @@ const QUICK = [
 
 // The frustrations behind most council complaints, each with a way out.
 const COMMON = [
-  { title: "Repairs that never come", sub: "Top Ombudsman issue in Hackney", q: "I reported a repair weeks ago and nothing has happened. How do I chase or escalate it?", Icon: IconWrench },
-  { title: "Fly-tip outside my block", sub: "31,000+ in Hackney last year", report: true, Icon: IconBin },
+  { title: "Repairs that never come", sub: "How to chase or escalate it", q: "I reported a repair weeks ago and nothing has happened. How do I chase or escalate it?", Icon: IconWrench },
+  { title: "Fly-tip outside my block", sub: "Snap it and see where it ranks", report: true, Icon: IconBin },
   { title: "Noise at night", sub: "Who to call when it's 2am", q: "My neighbours are making noise late at night. Who do I contact in Hackney?", Icon: IconSpeaker },
 ];
 
@@ -172,7 +172,7 @@ export function FrontDoor({
       <div className="rounded-[24px] bg-card p-4 shadow-card">
         <Label>Sound familiar?</Label>
         <p className="mt-1 text-[13px] leading-snug text-muted">
-          No hold music, no &ldquo;we&rsquo;ll be in touch&rdquo;. Get the answer now, and every report gets a tracker and a fix date.
+          No hold music, no &ldquo;we&rsquo;ll be in touch&rdquo;. Get the answer now, and every report gets a tracker and an estimated fix window.
         </p>
         <div className="mt-2 divide-y divide-line">
           {COMMON.map((c) => (

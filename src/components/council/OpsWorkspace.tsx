@@ -27,6 +27,15 @@ const PERSIST = {
 export type View = "dispatch" | "hotspots";
 
 const hm = (min: number) => `${String(Math.floor(min / 60)).padStart(2, "0")}:${String(Math.round(min % 60)).padStart(2, "0")}`;
+/** The dates the hotspot grid actually covers, e.g. "24 Oct to 1 Nov". */
+function reportPeriod(hotspots: Hotspot[]) {
+  const firsts = hotspots.flatMap((h) => h.first_day ?? []).sort();
+  const lasts = hotspots.flatMap((h) => h.last_day ?? []).sort();
+  if (!firsts.length || !lasts.length) return "No reports";
+  const day = (d: string) => new Date(d).toLocaleDateString("en-GB", { day: "numeric", month: "short", timeZone: "UTC" });
+  return `${day(firsts[0])} to ${day(lasts[lasts.length - 1])}`;
+}
+
 const hatch = (c: string) => `repeating-linear-gradient(135deg, rgba(255,255,255,.28) 0 2px, transparent 2px 7px), ${c}`;
 
 export function OpsWorkspace({
@@ -110,11 +119,11 @@ export function OpsWorkspace({
         <main className="min-w-0 flex-1 px-6 py-6">
           <header className="flex flex-wrap items-end gap-3">
             <div>
-              <p className="text-[12px] text-muted">London Borough of Hackney · {today} · {withWorkOrders} of {jobs.length} jobs have an AI work order</p>
+              <p className="text-[12px] text-muted">London Borough of Hackney · {today} · {withWorkOrders} of {jobs.length} open jobs have an AI work order</p>
               <h1 className="mt-0.5 text-[28px] font-medium tracking-[-0.03em]">{view === "dispatch" ? "Dispatch" : "Hotspots"}</h1>
             </div>
             <div className="ml-auto flex items-center gap-2">
-              <Chip icon={<IconCalendar />}>{view === "dispatch" ? "Tomorrow · 08:00 to 15:30" : "Last 6 weeks"}</Chip>
+              <Chip icon={<IconCalendar />}>{view === "dispatch" ? "Tomorrow · 08:00 to 15:30" : reportPeriod(hotspots)}</Chip>
               {view === "dispatch" ? (
                 <button onClick={dispatch} disabled={sending} className="flex h-10 items-center gap-2 rounded-full bg-[#10261f] pl-4 pr-3 text-[13px] font-semibold text-white transition hover:bg-hackney disabled:opacity-60">
                   {sending ? "Sending" : "Dispatch to crews"}
